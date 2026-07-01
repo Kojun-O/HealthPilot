@@ -9,12 +9,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "../assets/apple-touch-icon.png",
+      "src": "assets/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "../assets/icon-1024.png",
+      "src": "assets/icon-1024.png",
       "sizes": "1024x1024",
       "type": "image/png"
     }
