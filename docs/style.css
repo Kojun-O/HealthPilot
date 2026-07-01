@@ -98,3 +98,25 @@ strong {
     color:#666;
     font-size:16px;
 }
+/* ===== Brand Assets ===== */
+
+.brand-logo {
+    width: 220px;
+    max-width: 80%;
+    display: block;
+    margin: 0 auto 10px;
+    border-radius: 24px;
+}
+
+.subtagline {
+    font-size: 13px;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .subtagline {
+        color: #94a3b8;
+    }
+}
