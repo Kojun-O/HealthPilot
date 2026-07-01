@@ -1,170 +1,93 @@
-🌿 Health Pilot
+# 🌿 Health Pilot
 
-健康を、もっとシンプルに。
+> **Turn health data into daily action.**
+>
+> **健康データを、今日の行動へ。**
 
-Your Personal AI Health Copilot
+Health Pilot is an AI-powered personal health copilot.
 
-⸻
+Instead of simply displaying health data,
+Health Pilot transforms health information into clear daily actions.
 
-🌟 Vision
+---
 
-Health Pilot は、健康データを「見る」ためのアプリではありません。
+## Vision
 
-AI が Apple Health や SOXAI Ring などの健康データを分析し、
+Health should be simple.
 
-「今日やるべきこと」をシンプルに提案する
+People shouldn't need medical knowledge to improve their health.
 
-ことを目的とした AI 健康アシスタントです。
+Every morning Health Pilot answers one question:
 
-健康管理を、もっと簡単に。
+> **What should I do today?**
 
-健康改善を、もっと続けやすく。
+---
 
-⸻
+## Features
 
-✨ Features
+- 📈 Health Score
+- 🎯 Daily Missions
+- 🤖 AI Health Agent
+- 😴 Sleep Analysis
+- 🚶 Activity Analysis
+- ❤️ Recovery Analysis
 
-🎯 Today’s Mission
+---
 
-AI が毎朝、その日に最も重要な健康アクションを3つ提案します。
+## AI Providers
 
-例
+Health Pilot is AI-provider independent.
 
-* 🌙 23:30までに就寝
-* 🚶 あと2,500歩
-* 💧 水を800mL飲む
+Supported providers:
 
-⸻
+- Built-in AI (Free)
+- ChatGPT
+- Claude
+- Gemini
+- Ollama
 
-💯 Health Score
+Users can freely choose their preferred AI.
 
-健康状態を100点満点で表示。
+---
 
-数字を見るだけではなく、
+## Architecture
 
-「どうすれば点数が上がるか」
+```
+Health Data
+      │
+      ▼
+Health Engine
+      │
+      ▼
+Health AI Core
+      │
+      ▼
+AI Provider
+      │
+      ▼
+Today's Actions
+```
 
-まで提案します。
+---
 
-⸻
+## Philosophy
 
-🤖 AI Health Advice
+Apple Health tells you **what happened.**
 
-AI が
+Health Pilot tells you **what to do next.**
 
-* 睡眠
-* 活動量
-* 回復
-* 体重
-* 習慣
+---
 
-を分析し、
+## Status
 
-毎朝5秒で読めるアドバイスを届けます。
+🚀 Early Development
 
-⸻
+Version:
 
-📈 Reports
+v0.3.0
 
-* 日次
-* 週次
-* 月次
-* 年次
+---
 
-健康レポートを自動生成します。
+## License
 
-⸻
-
-🍎 Apple Health
-
-Apple Health のデータを読み込み、
-
-睡眠・歩数・体重などを分析します。
-
-⸻
-
-💍 SOXAI Ring
-
-SOXAI Ring の月次レポートを解析し、
-
-Health Score に反映します。
-
-⸻
-
-🚀 Roadmap
-
-✅ v0.1
-
-* Home Dashboard
-* Health Score
-* Today’s Mission
-* AI Comment
-
-⸻
-
-🚧 v0.2
-
-* Mission Completion
-* Progress Saving
-* Completion Rate
-
-⸻
-
-🚧 v0.3
-
-* Reports
-* Charts
-* Weekly Summary
-
-⸻
-
-🚧 v0.4
-
-* Apple Health Import
-* SOXAI Integration
-
-⸻
-
-🚀 v1.0
-
-Public Release
-
-⸻
-
-🎯 Philosophy
-
-Health Pilot は
-
-健康データを集めることを目的にしません。
-
-健康データを、今日の行動へ。
-
-これが Health Pilot の考え方です。
-
-⸻
-
-🛠️ Tech Stack
-
-* HTML
-* CSS
-* JavaScript
-* GitHub Pages
-
-Future
-
-* Apple Health
-* AI Analysis
-* PWA
-* iPhone Home Screen App
-
-⸻
-
-👨‍💻 Status
-
-Current Version
-
-v0.1 (Development)
-
-⸻
-
-Made with ❤️ by the Health Pilot Project.
+MIT License
