@@ -7,14 +7,13 @@
 
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/png" href="assets/favicon-source.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0ea5e9">
-
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
 </head>
+
 <body>
-  
+
 <header class="app-header">
   <img src="assets/logo.png" alt="Health Pilot Logo" class="brand-logo">
   <p class="tagline">健康を、もっとシンプルに。</p>
@@ -29,49 +28,52 @@
   </div>
 
   <div class="card score">
-
     <h3>Health Score</h3>
-
     <div id="score">89</div>
-
     <p>理想まであと6点</p>
-
   </div>
 
   <div class="card">
-
     <h3>🎯 今日のMission</h3>
 
-    <ul id="mission-list">
-      <li>★★★★★ 23:45までに寝る</li>
-      <li>★★★★☆ あと2,300歩</li>
-      <li>★★★☆☆ レオピンファイブを朝夕服用</li>
+    <ul id="mission-list" class="mission-list">
+      <li>
+        <label class="mission-item">
+          <input type="checkbox" class="mission-checkbox">
+          <span>★★★★★ 23:45までに寝る</span>
+        </label>
+      </li>
+      <li>
+        <label class="mission-item">
+          <input type="checkbox" class="mission-checkbox">
+          <span>★★★★☆ あと2,300歩</span>
+        </label>
+      </li>
+      <li>
+        <label class="mission-item">
+          <input type="checkbox" class="mission-checkbox">
+          <span>★★★☆☆ レオピンファイブを朝夕服用</span>
+        </label>
+      </li>
     </ul>
-
   </div>
 
   <div class="card">
-
     <h3>📈 今日の健康予報</h3>
-
     <p>
       今日のMissionを達成すると、
       Health Scoreは
       <strong>93点</strong>
       の見込みです。
     </p>
-
   </div>
 
   <div class="card">
-
     <h3>🤖 AIコメント</h3>
-
     <p id="ai-comment">
       昨日は回復が良好でした。<br>
       今日は睡眠だけ意識すれば十分です😊
     </p>
-
   </div>
 
 </div>
