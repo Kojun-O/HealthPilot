@@ -1,107 +1,176 @@
-# 🌿 Health Pilot
+# Health Pilot
 
-> **Turn health data into daily action, for every human, without exception.**
+**Your personal AI Health Copilot.**
 
-**健康データを、今日の行動へ。**
+Health data shouldn't tell you what happened.
 
-**一人も例外のいない、すべての人のために。**
-
----
-
-Health Pilot is an AI-powered personal health copilot that transforms health data into meaningful daily actions.
-
-Instead of overwhelming people with numbers, Health Pilot helps answer one simple question:
-
-> **What should I do today?**
+It should tell you what to do.
 
 ---
 
-# 🌍 Vision
+## The Problem
 
-Health should not be complicated.
+Modern health apps generate more and more information.
 
-Technology should reduce stress, not create it.
+More graphs.
 
-People shouldn't need medical knowledge to improve their health.
+More scores.
 
-Health Pilot exists to make healthier decisions simple, every day.
+More dashboards.
 
----
+More notifications.
 
-# ✨ Features
+People are expected to interpret all of it, decide what matters, and determine what to do next.
 
-- 📈 Health Score
-- 🎯 Dynamic Daily Missions
-- 🤖 Built-in AI Health Coach
-- 😴 Sleep Analysis
-- 🚶 Activity Analysis
-- ❤️ Recovery Analysis
+Health data has become easier to collect.
+
+Making better health decisions has not.
 
 ---
 
-# 🤖 AI Providers
+## Our Philosophy
 
-Health Pilot is AI-provider independent.
+Health Pilot is built on one simple belief.
 
-Supported providers:
+**Process more.
+Show less.**
 
-- 🌿 Built-in AI (Always Free)
-- ChatGPT
-- Claude
-- Gemini
-- Ollama
+The AI handles complexity.
 
-Users are free to choose the AI that best fits their needs.
+People focus on decisions.
+
+Instead of asking users to analyze dozens of metrics, Health Pilot reduces everything into a clear next action.
+
+**Mission first.**
+
+**Reason second.**
+
+**Data third.**
 
 ---
 
-# 🏗 Architecture
+## Design Principles
 
-```text
-Health Data
-      │
-      ▼
-Health Engine
-      │
-      ▼
-Context Builder
-      │
-      ▼
-AI Provider
-      │
-      ▼
-Today's Actions
+### 1. Reduce cognition.
+
+Technology should reduce mental effort, not increase it.
+
+Health Pilot continuously processes health data in the background so users don't have to.
+
+---
+
+### 2. Action first.
+
+Knowing is not the goal.
+
+Doing is.
+
+Every screen should answer one question first:
+
+**"What should I do next?"**
+
+Analysis exists to support action, never replace it.
+
+---
+
+### 3. People decide.
+
+Health Pilot is an advisor.
+
+Not a decision maker.
+
+The AI recommends.
+
+People decide.
+
+---
+
+## Example
+
+Instead of this:
+
+```
+Sleep Score: 82
+
+Recovery: 78
+
+HRV: 54 ms
+
+Resting Heart Rate: 49 bpm
+
+Stress: Moderate
 ```
 
----
+Health Pilot shows this:
 
-# 🌱 Philosophy
+```
+Today's Mission
 
-Apple Health tells you what happened.
+Go outside for 20 minutes before 10:00.
 
-Health Pilot helps you decide what to do next.
+Why?
 
----
+• HRV is lower than usual.
+• Sleep debt has increased.
+• Morning sunlight will improve alertness.
+```
 
-# 🚀 Current Status
+One clear action.
 
-Early Development
-
-Latest Release:
-
-**v0.1.0 – Health Pilot Foundation**
-
----
-
-# 📖 Manifesto
-
-Health Pilot is guided by a public manifesto that defines its mission, values, and long-term vision.
-
-> Turn health data into daily action,
-> for every human, without exception.
+Supporting evidence only when needed.
 
 ---
 
-# 📄 License
+## What Health Pilot Is
 
-MIT License
+Health Pilot is not another dashboard.
+
+It is not another health tracker.
+
+It is not another analytics tool.
+
+Health Pilot is an AI Health Copilot that helps people make better health decisions.
+
+Its purpose is not to display health data.
+
+Its purpose is to transform health data into action.
+
+---
+
+## Roadmap
+
+### Current
+
+* Daily Mission
+* AI Health Analysis
+* Apple Health integration
+* Simple, action-first interface
+
+### Next
+
+* Long-term coaching
+* Adaptive daily missions
+* Predictive health insights
+* Personalized behavior support
+
+---
+
+## Documentation
+
+* Manifesto
+* Vision
+* Architecture
+* Development Guide
+* Design Principles
+
+Together, these documents describe not only how Health Pilot is built, but why it exists.
+
+---
+
+## Mission
+
+People don't need more health information.
+
+They need confidence in what to do next.
+
+Health Pilot exists to reduce cognitive load and help people make better health decisions—one mission at a time.
