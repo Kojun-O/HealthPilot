@@ -6,6 +6,10 @@ Health data shouldn't tell you what happened.
 
 It should tell you what to do.
 
+<p align="center">
+  <img src="docs/images/health-pilot-mission-first.png" alt="Health Pilot mission-first app mockup" width="900">
+</p>
+
 ---
 
 ## The Problem
