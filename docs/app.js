@@ -1,34 +1,25 @@
 // =========================
 // Health Pilot v0.2.0
-// Health Agent Lite
+// Mission First Prototype
 // =========================
 
 const healthData = {
   score: 89,
   idealScore: 95,
-  missions: [
-    {
-      id: "sleep",
-      title: "23:45までに寝る",
-      priority: 5,
-      impact: 4,
-      category: "sleep"
-    },
-    {
-      id: "steps",
-      title: "あと2,300歩",
-      priority: 4,
-      impact: 2,
-      category: "activity"
-    },
-    {
-      id: "supplement",
-      title: "レオピンファイブを朝夕服用",
-      priority: 3,
-      impact: 1,
-      category: "habit"
-    }
-  ]
+  mission: {
+    id: "morning-walk",
+    title: "10:00までに20分外を歩く",
+    action: "外に出て20分歩く",
+    timing: "10:00まで",
+    reason: [
+      "朝の光で覚醒と気分を整える",
+      "睡眠負債の影響を軽くする",
+      "今日の集中力を上げる"
+    ],
+    priority: 5,
+    impact: 4,
+    category: "activity"
+  }
 };
 
 function getScoreLabel(score) {
@@ -44,26 +35,13 @@ function getScoreColor(score) {
   return "#FF3B30";
 }
 
-function createStars(count) {
-  return "★".repeat(count) + "☆".repeat(5 - count);
-}
-
 function generateAgentAdvice(data) {
-  const topMission = data.missions[0];
+  const mission = data.mission;
   const gap = data.idealScore - data.score;
 
-  if (topMission.category === "sleep") {
-    return `今日は睡眠を優先しましょう。<br>
-${topMission.title}を達成できると、理想まであと${Math.max(gap - topMission.impact, 0)}点まで近づけます😊`;
-  }
-
-  if (topMission.category === "activity") {
-    return `今日は活動量を少し足すと良さそうです。<br>
-${topMission.title}を意識すると、健康スコアの改善が期待できます🚶`;
-  }
-
-  return `今日は小さな習慣を整える日です。<br>
-無理なく1つずつ達成していきましょう🌿`;
+  return `今日のMissionは「${mission.title}」です。<br>
+${mission.reason[0]}ため、まずはこの1つに集中しましょう。<br>
+達成できると、理想まであと${Math.max(gap - mission.impact, 0)}点まで近づけます🚶`;
 }
 
 function renderHealthPilot(data) {
@@ -82,13 +60,27 @@ function renderHealthPilot(data) {
   }
 
   if (missionList) {
-    missionList.innerHTML = "";
+    const mission = data.mission;
 
-    data.missions.forEach((mission) => {
-      const li = document.createElement("li");
-      li.textContent = `${createStars(mission.priority)} ${mission.title}（+${mission.impact}）`;
-      missionList.appendChild(li);
-    });
+    missionList.innerHTML = `
+      <li>
+        <div class="mission-card">
+          <p class="mission-label">Today's Mission</p>
+          <h2>${mission.title}</h2>
+          <p>${mission.action}</p>
+          <p><strong>${mission.timing}</strong></p>
+
+          <button class="mission-button">完了した</button>
+
+          <div class="mission-reason">
+            <p><strong>Why?</strong></p>
+            <ul>
+              ${mission.reason.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      </li>
+    `;
   }
 
   if (aiComment) {
@@ -105,17 +97,17 @@ function updateGreeting() {
 
   if (hour < 12) {
     greetingTitle.textContent = "☀️ おはようございます！";
-    greetingText.textContent = "今日は睡眠を優先しましょう。";
+    greetingText.textContent = "今日はこのMissionだけに集中しましょう。";
   } else if (hour < 18) {
     greetingTitle.textContent = "🌤️ こんにちは！";
-    greetingText.textContent = "午後も無理せずいきましょう。";
+    greetingText.textContent = "午後もMissionを1つだけ進めましょう。";
   } else {
     greetingTitle.textContent = "🌙 お疲れさまです！";
-    greetingText.textContent = "今日は早めに休みましょう。";
+    greetingText.textContent = "明日に疲れを残さない判断をしましょう。";
   }
 }
 
 updateGreeting();
 renderHealthPilot(healthData);
 
-console.log("Health Agent Lite started");
+console.log("Mission First Prototype started");
