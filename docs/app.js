@@ -1,25 +1,14 @@
 // =========================
-// Health Pilot v0.2.0
-// Mission First Prototype
+// Health Pilot v0.6.0
+// Mission Engine Prototype
 // =========================
+
+const sampleDailyCondition = HealthEngine.sampleDailyCondition;
 
 const healthData = {
   score: 89,
   idealScore: 95,
-  mission: {
-    id: "morning-walk",
-    title: "10:00までに20分外を歩く",
-    action: "外に出て20分歩く",
-    timing: "10:00まで",
-    reason: [
-      "朝の光で覚醒と気分を整える",
-      "睡眠負債の影響を軽くする",
-      "今日の集中力を上げる"
-    ],
-    priority: 5,
-    impact: 4,
-    category: "activity"
-  }
+  mission: HealthEngine.generateDailyMission(sampleDailyCondition)
 };
 
 function getScoreLabel(score) {
@@ -40,8 +29,8 @@ function generateAgentAdvice(data) {
   const gap = data.idealScore - data.score;
 
   return `今日のMissionは「${mission.title}」です。<br>
-${mission.reason[0]}ため、まずはこの1つに集中しましょう。<br>
-達成できると、理想まであと${Math.max(gap - mission.impact, 0)}点まで近づけます🚶`;
+${mission.reason}ため、まずはこの1つに集中しましょう。<br>
+達成できると、理想まであと${Math.max(gap - mission.estimatedMinutes, 0)}点まで近づけます🚶`;
 }
 
 function renderHealthPilot(data) {
@@ -66,14 +55,15 @@ function renderHealthPilot(data) {
       <li>
         <div class="mission-card">
           <h2>${mission.title}</h2>
-          <p class="mission-deadline"><strong>${mission.timing}</strong></p>
+          <p class="mission-action">${mission.action}</p>
+          <p class="mission-meta">${mission.category} · ${mission.intensity} · ${mission.estimatedMinutes}分</p>
 
           <button class="mission-button" type="button">完了した</button>
 
           <details class="mission-reason">
             <summary>Why this mission?</summary>
             <ul>
-              ${mission.reason.map((item) => `<li>${item}</li>`).join("")}
+              <li>${mission.reason}</li>
             </ul>
           </details>
         </div>

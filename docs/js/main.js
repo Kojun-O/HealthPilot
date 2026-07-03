@@ -31,14 +31,15 @@ function renderMission(mission) {
     <li>
       <div class="mission-card">
         <h2>${mission.title}</h2>
-        <p class="mission-deadline"><strong>${mission.timing}</strong></p>
+        <p class="mission-action">${mission.action}</p>
+        <p class="mission-meta">${mission.category} · ${mission.intensity} · ${mission.estimatedMinutes}分</p>
 
         <button class="mission-button" type="button">完了した</button>
 
         <details class="mission-reason">
           <summary>Why this mission?</summary>
           <ul>
-            ${mission.reason.map((item) => `<li>${item}</li>`).join("")}
+            <li>${mission.reason}</li>
           </ul>
         </details>
       </div>
@@ -47,20 +48,8 @@ function renderMission(mission) {
 }
 
 function startHealthPilot() {
-  const mission = {
-    id: "morning-walk",
-    title: "10:00までに20分外を歩く",
-    action: "外に出て20分歩く",
-    timing: "10:00まで",
-    reason: [
-      "朝の光で覚醒と気分を整える",
-      "睡眠負債の影響を軽くする",
-      "今日の集中力を上げる"
-    ],
-    priority: 5,
-    impact: 4,
-    category: "activity"
-  };
+  const dailyCondition = HealthEngine.sampleDailyCondition;
+  const mission = HealthEngine.generateDailyMission(dailyCondition);
 
   const advice = `今日のMissionは「${mission.title}」です。<br>
 まずはこの1つだけに集中しましょう。`;
