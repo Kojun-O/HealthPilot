@@ -48,7 +48,17 @@ function renderMission(mission) {
 }
 
 function startHealthPilot() {
-  const dailyCondition = HealthEngine.sampleDailyCondition;
+  const rawHealthData = {
+    sleepScore: 42,
+    recoveryScore: 48,
+    stressLevel: 72,
+    energyLevel: 38,
+    focusLevel: 45,
+    bodyCondition: "肩が少し張っている",
+    note: "昨夜は寝付きが悪かった"
+  };
+
+  const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
   const mission = HealthEngine.generateDailyMission(dailyCondition);
 
   const advice = `今日のMissionは「${mission.title}」です。<br>
@@ -57,6 +67,8 @@ function startHealthPilot() {
   renderMission(mission);
   renderAdvice(advice);
 
+  console.log("Raw health data:", rawHealthData);
+  console.log("Normalized daily condition:", dailyCondition);
   console.log("Mission First:", mission);
 }
 

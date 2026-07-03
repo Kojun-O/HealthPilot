@@ -3,12 +3,13 @@
 // Mission Engine Prototype
 // =========================
 
-const sampleDailyCondition = HealthEngine.sampleDailyCondition;
+const rawDailyCondition = HealthEngine.sampleDailyCondition;
+const normalizedDailyCondition = HealthDataAdapter.normalizeHealthData(rawDailyCondition);
 
 const healthData = {
   score: 89,
   idealScore: 95,
-  mission: HealthEngine.generateDailyMission(sampleDailyCondition)
+  mission: HealthEngine.generateDailyMission(normalizedDailyCondition)
 };
 
 function getScoreLabel(score) {
