@@ -65,19 +65,17 @@ function renderHealthPilot(data) {
     missionList.innerHTML = `
       <li>
         <div class="mission-card">
-          <p class="mission-label">Today's Mission</p>
           <h2>${mission.title}</h2>
-          <p>${mission.action}</p>
-          <p><strong>${mission.timing}</strong></p>
+          <p class="mission-deadline"><strong>${mission.timing}</strong></p>
 
-          <button class="mission-button">完了した</button>
+          <button class="mission-button" type="button">完了した</button>
 
-          <div class="mission-reason">
-            <p><strong>Why?</strong></p>
+          <details class="mission-reason">
+            <summary>Why this mission?</summary>
             <ul>
               ${mission.reason.map((item) => `<li>${item}</li>`).join("")}
             </ul>
-          </div>
+          </details>
         </div>
       </li>
     `;
