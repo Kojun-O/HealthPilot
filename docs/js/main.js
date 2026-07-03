@@ -13,6 +13,7 @@ const APP = {
 };
 
 window.APP = APP;
+let currentMission = null;
 
 function renderAdvice(advice) {
   const aiComment = document.getElementById("ai-comment");
@@ -29,6 +30,53 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function getStorage() {
+  try {
+    return window.sessionStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getTodayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 36) || "mission";
+}
+
+function getMissionCompletionStorageKey(mission) {
+  const safeMission = mission && typeof mission === "object" ? mission : {};
+  const title = getMissionText(safeMission, "title", "mission");
+  const action = getMissionText(safeMission, "action", "mission");
+  const minutes = getMissionMinutes(safeMission);
+  const todayKey = getTodayKey();
+
+  return `healthpilot:mission-completed:${todayKey}:${slugify(title)}:${slugify(action)}:${slugify(minutes)}`;
+}
+
+function isMissionCompleted(mission) {
+  const storage = getStorage();
+  if (!storage) return false;
+
+  return storage.getItem(getMissionCompletionStorageKey(mission)) === "true";
+}
+
+function setMissionCompleted(mission, completed) {
+  const storage = getStorage();
+  if (!storage) return;
+
+  storage.setItem(getMissionCompletionStorageKey(mission), completed ? "true" : "false");
 }
 
 function getMissionText(mission, field, fallback) {
@@ -92,7 +140,26 @@ function renderInsight(insight) {
   message.textContent = insightMessage;
 }
 
+function attachMissionButtonHandler() {
+  const missionList = document.getElementById("mission-list");
+
+  if (!missionList || missionList.dataset.bound === "true") return;
+
+  missionList.addEventListener("click", function (event) {
+    const button = event.target.closest(".mission-button");
+
+    if (!button || button.disabled || !currentMission) return;
+
+    setMissionCompleted(currentMission, true);
+    renderMission(currentMission);
+  });
+
+  missionList.dataset.bound = "true";
+}
+
 function renderMission(mission) {
+  currentMission = mission;
+
   const missionList = document.getElementById("mission-list");
 
   if (!missionList) return;
@@ -104,10 +171,15 @@ function renderMission(mission) {
   const minutes = getMissionMinutes(safeMission);
   const intensity = getMissionIntensityLabel(getMissionText(safeMission, "intensity", "low"));
   const category = getMissionCategoryLabel(getMissionText(safeMission, "category", "recovery"));
+  const isCompleted = isMissionCompleted(safeMission);
+  const buttonLabel = isCompleted ? "完了済み" : "完了した";
+  const completionMessage = isCompleted
+    ? '<p class="mission-completion-message" aria-live="polite">完了しました。今日も一歩前進です。</p>'
+    : "";
 
   missionList.innerHTML = `
     <li>
-      <div class="mission-card">
+      <div class="mission-card${isCompleted ? " is-completed" : ""}">
         <h2>${escapeHtml(title)}</h2>
 
         <div class="mission-details">
@@ -137,7 +209,8 @@ function renderMission(mission) {
           </div>
         </div>
 
-        <button class="mission-button" type="button">完了した</button>
+        ${completionMessage}
+        <button class="mission-button" type="button" ${isCompleted ? "disabled" : ""}>${buttonLabel}</button>
 
         <details class="mission-reason">
           <summary>なぜこのミッション？</summary>
@@ -146,6 +219,8 @@ function renderMission(mission) {
       </div>
     </li>
   `;
+
+  attachMissionButtonHandler();
 }
 
 function startHealthPilot() {
