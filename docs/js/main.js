@@ -74,6 +74,24 @@ function getMissionCategoryLabel(category) {
   return "回復";
 }
 
+function renderInsight(insight) {
+  const headline = document.getElementById("insight-headline");
+  const message = document.getElementById("insight-message");
+
+  if (!headline || !message) return;
+
+  const safeInsight = insight && typeof insight === "object" ? insight : {};
+  const insightHeadline = typeof safeInsight.headline === "string" && safeInsight.headline.trim()
+    ? safeInsight.headline
+    : "今日のヒント";
+  const insightMessage = typeof safeInsight.message === "string" && safeInsight.message.trim()
+    ? safeInsight.message
+    : "体調に合わせて、まずは小さな一歩を始めてみましょう。";
+
+  headline.textContent = insightHeadline;
+  message.textContent = insightMessage;
+}
+
 function renderMission(mission) {
   const missionList = document.getElementById("mission-list");
 
@@ -142,16 +160,19 @@ function startHealthPilot() {
   };
 
   const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
+  const insight = DailyInsightEngine.generateDailyInsight(dailyCondition);
   const mission = HealthEngine.generateDailyMission(dailyCondition);
 
   const safeTitle = getMissionText(mission, "title", "今日の一歩");
   const advice = `今日のMissionは「${safeTitle}」です。<br>
 まずはこの1つだけに集中しましょう。`;
 
+  renderInsight(insight);
   renderMission(mission);
   renderAdvice(advice);
 
   console.log("Raw health data:", rawHealthData);
+  console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
   console.log("Mission First:", mission);
 }

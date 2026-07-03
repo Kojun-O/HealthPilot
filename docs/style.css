@@ -44,6 +44,33 @@ body {
     color: #007AFF;
 }
 
+.insight-card {
+    border-left: 4px solid #0ea5e9;
+}
+
+.insight-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+#insight-headline {
+    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 20px;
+    line-height: 1.4;
+}
+
+#insight-message {
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+}
+
 .score {
     text-align: center;
 }
