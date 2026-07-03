@@ -86,6 +86,40 @@ body {
     font-size: 14px;
 }
 
+.mission-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.mission-detail {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+.mission-detail-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.mission-label {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.mission-value {
+    color: #0f172a;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
 .mission-deadline {
     margin-bottom: 18px;
     color: #0f172a;
