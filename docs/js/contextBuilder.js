@@ -6,7 +6,9 @@
 function buildHealthContext(data) {
 
     const score = HealthEngine.calculateHealthScore(data);
-    const missions = HealthEngine.generateMissions(data);
+    const missions = window.DecisionEngine && typeof window.DecisionEngine.generateDailyMissions === "function"
+        ? window.DecisionEngine.generateDailyMissions(data)
+        : [];
 
     return {
 

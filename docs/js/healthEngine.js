@@ -3,6 +3,10 @@
 // Mission Engine v0.6
 // ======================================
 
+if (typeof window !== "undefined" && window.DecisionEngine) {
+    console.log("Decision Engine v2 available");
+}
+
 /**
  * @typedef {Object} DailyCondition
  * @property {number} sleepScore
@@ -84,29 +88,8 @@ const missionCatalog = {
  * @returns {Mission}
  */
 function generateDailyMission(input) {
-    const lowSleep = input.sleepScore < 55;
-    const lowRecovery = input.recoveryScore < 55;
-    const highStress = input.stressLevel >= 65;
-    const lowEnergy = input.energyLevel < 45;
-    const lowFocus = input.focusLevel < 50;
-
-    if (lowSleep || lowRecovery) {
-        return missionCatalog.recovery;
-    }
-
-    if (highStress) {
-        return missionCatalog.stability;
-    }
-
-    if (lowEnergy) {
-        return missionCatalog.recovery;
-    }
-
-    if (lowFocus) {
-        return missionCatalog.focus;
-    }
-
-    return missionCatalog.movement;
+    const missions = generateMissions(input);
+    return missions[0] || missionCatalog.recovery;
 }
 
 function calculateSleepScore(data) {
@@ -152,15 +135,19 @@ function calculateHealthScore(data) {
 }
 
 function generateMissions(data) {
-    const mission = generateDailyMission(data);
-    return [mission];
+    if (typeof window !== "undefined" && window.DecisionEngine && typeof window.DecisionEngine.generateDailyMissions === "function") {
+        return window.DecisionEngine.generateDailyMissions(data);
+    }
+
+    return [];
 }
 
 window.HealthEngine = {
     sampleDailyCondition,
     calculateHealthScore,
     generateMissions,
-    generateDailyMission
+    generateDailyMission,
+    generateDailyMissions: generateMissions
 };
 
 console.log("Health Engine loaded");

@@ -27,11 +27,16 @@ function normalizeHealthData(rawData = {}) {
   }
 
   const normalized = {
-    sleepScore: clampMetric(rawData.sleepScore, 80),
-    recoveryScore: clampMetric(rawData.recoveryScore, 80),
-    stressLevel: clampMetric(rawData.stressLevel, 30),
-    energyLevel: clampMetric(rawData.energyLevel, 70),
-    focusLevel: clampMetric(rawData.focusLevel, 70),
+    sleep: clampMetric(rawData.sleep ?? rawData.sleepScore, 80),
+    condition: clampMetric(rawData.condition ?? rawData.recoveryScore, 80),
+    stress: clampMetric(rawData.stress ?? rawData.stressLevel, 30),
+    exercise: clampMetric(rawData.exercise ?? rawData.energyLevel, 70),
+    mood: clampMetric(rawData.mood ?? rawData.focusLevel, 70),
+    sleepScore: clampMetric(rawData.sleepScore ?? rawData.sleep, 80),
+    recoveryScore: clampMetric(rawData.recoveryScore ?? rawData.condition, 80),
+    stressLevel: clampMetric(rawData.stressLevel ?? rawData.stress, 30),
+    energyLevel: clampMetric(rawData.energyLevel ?? rawData.exercise, 70),
+    focusLevel: clampMetric(rawData.focusLevel ?? rawData.mood, 70),
     bodyCondition: normalizeText(rawData.bodyCondition),
     note: normalizeText(rawData.note)
   };

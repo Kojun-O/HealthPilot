@@ -17,9 +17,14 @@ let currentMission = null;
 
 function renderAdvice(advice) {
   const aiComment = document.getElementById("ai-comment");
+  const insightCopy = document.querySelector(".card-insight .insight-copy");
 
   if (aiComment) {
     aiComment.innerHTML = advice;
+  }
+
+  if (insightCopy) {
+    insightCopy.innerHTML = advice;
   }
 }
 
@@ -118,6 +123,9 @@ function getMissionCategoryLabel(category) {
 
   if (normalized === "focus") return "集中";
   if (normalized === "movement") return "運動";
+  if (normalized === "hydration") return "水分";
+  if (normalized === "mental") return "メンタル";
+  if (normalized === "sleep") return "睡眠";
   if (normalized === "stability") return "安定";
   return "回復";
 }
@@ -125,8 +133,7 @@ function getMissionCategoryLabel(category) {
 function renderInsight(insight) {
   const headline = document.getElementById("insight-headline");
   const message = document.getElementById("insight-message");
-
-  if (!headline || !message) return;
+  const insightCopy = document.querySelector(".card-insight .insight-copy");
 
   const safeInsight = insight && typeof insight === "object" ? insight : {};
   const insightHeadline = typeof safeInsight.headline === "string" && safeInsight.headline.trim()
@@ -136,91 +143,65 @@ function renderInsight(insight) {
     ? safeInsight.message
     : "体調に合わせて、まずは小さな一歩を始めてみましょう。";
 
-  headline.textContent = insightHeadline;
-  message.textContent = insightMessage;
+  if (headline) {
+    headline.textContent = insightHeadline;
+  }
+
+  if (message) {
+    message.textContent = insightMessage;
+  }
+
+  if (insightCopy) {
+    insightCopy.textContent = insightMessage;
+  }
 }
 
-function attachMissionButtonHandler() {
-  const missionList = document.getElementById("mission-list");
+function renderWhyMissions(missions) {
+  const details = document.querySelector(".why-missions");
 
-  if (!missionList || missionList.dataset.bound === "true") return;
+  if (!details) return;
 
-  missionList.addEventListener("click", function (event) {
-    const button = event.target.closest(".mission-button");
+  const copy = details.querySelector("p");
+  const normalizedMissions = Array.isArray(missions) ? missions : [];
+  const reasons = normalizedMissions
+    .map((mission) => getMissionText(mission, "reason", ""))
+    .filter(Boolean)
+    .slice(0, 2);
 
-    if (!button || button.disabled || !currentMission) return;
-
-    setMissionCompleted(currentMission, true);
-    renderMission(currentMission);
-  });
-
-  missionList.dataset.bound = "true";
+  if (copy) {
+    copy.innerHTML = reasons.length > 0
+      ? reasons.map((reason) => escapeHtml(reason)).join("<br>")
+      : "今日の状態に合わせた小さな一歩です。";
+  }
 }
 
-function renderMission(mission) {
-  currentMission = mission;
-
-  const missionList = document.getElementById("mission-list");
+function renderMission(missions) {
+  const missionList = document.getElementById("mission-list") || document.querySelector(".mission-list");
+  const counter = document.querySelector(".counter-pill");
 
   if (!missionList) return;
 
-  const safeMission = mission && typeof mission === "object" ? mission : {};
-  const title = getMissionText(safeMission, "title", "今日の一歩");
-  const reason = getMissionText(safeMission, "reason", "今日の状態に合わせて選ばれた一歩です。");
-  const action = getMissionText(safeMission, "action", "まずは静かに始めてみましょう。");
-  const minutes = getMissionMinutes(safeMission);
-  const intensity = getMissionIntensityLabel(getMissionText(safeMission, "intensity", "low"));
-  const category = getMissionCategoryLabel(getMissionText(safeMission, "category", "recovery"));
-  const isCompleted = isMissionCompleted(safeMission);
-  const buttonLabel = isCompleted ? "完了済み" : "完了した";
-  const completionMessage = isCompleted
-    ? '<p class="mission-completion-message" aria-live="polite">完了しました。今日も一歩前進です。</p>'
-    : "";
+  const normalizedMissions = Array.isArray(missions) ? missions : [missions];
+  const renderedTitles = normalizedMissions.map((mission) => getMissionText(mission, "title", "今日の一歩"));
 
-  missionList.innerHTML = `
-    <li>
-      <div class="mission-card${isCompleted ? " is-completed" : ""}">
-        <h2>${escapeHtml(title)}</h2>
+  console.log("Selected missions for render:", normalizedMissions);
+  console.log("Rendered mission titles:", renderedTitles);
 
-        <div class="mission-details">
-          <div class="mission-detail">
-            <span class="mission-label">理由</span>
-            <p class="mission-value">${escapeHtml(reason)}</p>
-          </div>
+  const missionItems = renderedTitles.map((title) => `
+      <li class="mission-item">
+        <span class="mission-checkbox" aria-hidden="true"></span>
+        <span class="mission-label">${escapeHtml(title)}</span>
+      </li>
+    `).join("");
 
-          <div class="mission-detail">
-            <span class="mission-label">やること</span>
-            <p class="mission-value">${escapeHtml(action)}</p>
-          </div>
+  missionList.innerHTML = missionItems;
 
-          <div class="mission-detail mission-detail-inline">
-            <span class="mission-label">目安時間</span>
-            <p class="mission-value">${escapeHtml(minutes)}分</p>
-          </div>
+  if (counter) {
+    counter.textContent = `${Math.min(normalizedMissions.length, 3)}/3`;
+  }
 
-          <div class="mission-detail mission-detail-inline">
-            <span class="mission-label">強度</span>
-            <p class="mission-value">${escapeHtml(intensity)}</p>
-          </div>
-
-          <div class="mission-detail mission-detail-inline">
-            <span class="mission-label">カテゴリ</span>
-            <p class="mission-value">${escapeHtml(category)}</p>
-          </div>
-        </div>
-
-        ${completionMessage}
-        <button class="mission-button" type="button" ${isCompleted ? "disabled" : ""}>${buttonLabel}</button>
-
-        <details class="mission-reason">
-          <summary>なぜこのミッション？</summary>
-          <p>${escapeHtml(reason)}</p>
-        </details>
-      </div>
-    </li>
-  `;
-
-  attachMissionButtonHandler();
+  currentMission = normalizedMissions[0] || null;
+  renderWhyMissions(normalizedMissions);
 }
 
 function startHealthPilot() {
@@ -236,20 +217,22 @@ function startHealthPilot() {
 
   const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
   const insight = DailyInsightEngine.generateDailyInsight(dailyCondition);
-  const mission = HealthEngine.generateDailyMission(dailyCondition);
-
-  const safeTitle = getMissionText(mission, "title", "今日の一歩");
+  const missions = window.DecisionEngine && typeof window.DecisionEngine.generateDailyMissions === "function"
+    ? window.DecisionEngine.generateDailyMissions(dailyCondition)
+    : [];
+  const firstMission = Array.isArray(missions) && missions.length > 0 ? missions[0] : null;
+  const safeTitle = getMissionText(firstMission, "title", "今日の一歩");
   const advice = `今日のMissionは「${safeTitle}」です。<br>
-まずはこの1つだけに集中しましょう。`;
+まずはこの3つのうち、今日の優先順位が高いものから進めましょう。`;
 
   renderInsight(insight);
-  renderMission(mission);
+  renderMission(missions);
   renderAdvice(advice);
 
   console.log("Raw health data:", rawHealthData);
   console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
-  console.log("Mission First:", mission);
+  console.log("Mission First:", firstMission);
 }
 
 startHealthPilot();
