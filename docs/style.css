@@ -210,10 +210,31 @@ body {
   font-size: 15px;
 }
 
-.rating-placeholder {
+.rating-control {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.star-button {
+  border: none;
+  background: transparent;
   color: #cbd5e1;
-  letter-spacing: 0.18em;
-  font-size: 13px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: color 160ms ease;
+}
+
+.star-button.is-active {
+  color: #f59e0b;
+}
+
+.star-button:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .card-scores {

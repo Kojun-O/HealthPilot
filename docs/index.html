@@ -73,25 +73,25 @@
         </div>
 
         <div class="checkin-list">
-          <div class="checkin-row">
+          <div class="checkin-row" data-category="condition">
             <span>Condition</span>
-            <span class="rating-placeholder">★★★★★</span>
+            <div class="rating-control" role="group" aria-label="Condition rating"></div>
           </div>
-          <div class="checkin-row">
+          <div class="checkin-row" data-category="sleep">
             <span>Sleep</span>
-            <span class="rating-placeholder">★★★★★</span>
+            <div class="rating-control" role="group" aria-label="Sleep rating"></div>
           </div>
-          <div class="checkin-row">
+          <div class="checkin-row" data-category="exercise">
             <span>Exercise</span>
-            <span class="rating-placeholder">★★★★★</span>
+            <div class="rating-control" role="group" aria-label="Exercise rating"></div>
           </div>
-          <div class="checkin-row">
+          <div class="checkin-row" data-category="mood">
             <span>Mood</span>
-            <span class="rating-placeholder">★★★★★</span>
+            <div class="rating-control" role="group" aria-label="Mood rating"></div>
           </div>
-          <div class="checkin-row">
+          <div class="checkin-row" data-category="stress">
             <span>Stress</span>
-            <span class="rating-placeholder">★★★★★</span>
+            <div class="rating-control" role="group" aria-label="Stress rating"></div>
           </div>
         </div>
       </section>
@@ -126,6 +126,7 @@
   <script src="js/healthDataAdapter.js"></script>
   <script src="js/dailyInsightEngine.js"></script>
   <script src="js/healthEngine.js"></script>
+  <script src="js/checkInEngine.js"></script>
   <script src="js/main.js"></script>
   <script>
     const dateEl = document.getElementById('header-date');

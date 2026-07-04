@@ -204,6 +204,79 @@ function renderMission(missions) {
   renderWhyMissions(normalizedMissions);
 }
 
+function buildStarButtons(currentValue) {
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = index + 1;
+    const isActive = value <= currentValue;
+
+    return `
+      <button
+        type="button"
+        class="star-button${isActive ? " is-active" : ""}"
+        data-rating-value="${value}"
+        aria-label="Rate ${value} star"
+      >★</button>
+    `;
+  }).join("");
+}
+
+function renderCheckIn(checkInData) {
+  const checkInRows = document.querySelectorAll(".checkin-row");
+
+  if (!checkInRows.length) {
+    return;
+  }
+
+  const safeCheckIn = checkInData && typeof checkInData === "object" ? checkInData : {};
+
+  checkInRows.forEach((row) => {
+    const category = row.getAttribute("data-category");
+    const control = row.querySelector(".rating-control");
+
+    if (!control || !category) {
+      return;
+    }
+
+    const currentValue = Number(safeCheckIn[category] || 0);
+    control.innerHTML = buildStarButtons(currentValue);
+  });
+}
+
+function handleCheckInSelection(event) {
+  const button = event.target.closest(".star-button");
+
+  if (!button) {
+    return;
+  }
+
+  const row = button.closest(".checkin-row");
+  const category = row ? row.getAttribute("data-category") : null;
+  const rating = Number(button.getAttribute("data-rating-value") || 0);
+
+  if (!category) {
+    return;
+  }
+
+  const engine = window.CheckInEngine;
+  if (!engine || typeof engine.saveTodayCheckIn !== "function") {
+    return;
+  }
+
+  const updatedCheckIn = engine.saveTodayCheckIn({ [category]: rating });
+  renderCheckIn(updatedCheckIn);
+}
+
+function bindCheckInEvents() {
+  const checkInList = document.querySelector(".checkin-list");
+
+  if (!checkInList || checkInList.dataset.bound === "true") {
+    return;
+  }
+
+  checkInList.addEventListener("click", handleCheckInSelection);
+  checkInList.dataset.bound = "true";
+}
+
 function startHealthPilot() {
   const rawHealthData = {
     sleepScore: 42,
@@ -228,6 +301,13 @@ function startHealthPilot() {
   renderInsight(insight);
   renderMission(missions);
   renderAdvice(advice);
+
+  const checkInEngine = window.CheckInEngine;
+  if (checkInEngine && typeof checkInEngine.loadTodayCheckIn === "function") {
+    const todayCheckIn = checkInEngine.loadTodayCheckIn();
+    renderCheckIn(todayCheckIn);
+    bindCheckInEvents();
+  }
 
   console.log("Raw health data:", rawHealthData);
   console.log("Daily insight:", insight);
