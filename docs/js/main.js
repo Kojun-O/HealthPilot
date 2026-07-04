@@ -243,9 +243,22 @@ function renderCheckIn(checkInData) {
 }
 
 function handleCheckInSelection(event) {
-  const button = event.target.closest(".star-button");
+  const button = event.target && typeof event.target.closest === "function"
+    ? event.target.closest(".star-button")
+    : null;
 
   if (!button) {
+    return;
+  }
+
+  if (event.type === "pointerup" || event.type === "touchstart") {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const now = Date.now();
+  const lastInteraction = Number(button.getAttribute("data-last-interaction") || 0);
+  if (event.type === "click" && now - lastInteraction < 250) {
     return;
   }
 
@@ -262,6 +275,7 @@ function handleCheckInSelection(event) {
     return;
   }
 
+  button.setAttribute("data-last-interaction", String(now));
   const updatedCheckIn = engine.saveTodayCheckIn({ [category]: rating });
   renderCheckIn(updatedCheckIn);
 }
@@ -271,6 +285,14 @@ function bindCheckInEvents() {
 
   if (!checkInList || checkInList.dataset.bound === "true") {
     return;
+  }
+
+  const supportsPointerEvents = typeof window !== "undefined" && typeof window.PointerEvent !== "undefined";
+
+  if (supportsPointerEvents) {
+    checkInList.addEventListener("pointerup", handleCheckInSelection);
+  } else {
+    checkInList.addEventListener("touchstart", handleCheckInSelection, { passive: false });
   }
 
   checkInList.addEventListener("click", handleCheckInSelection);

@@ -221,10 +221,17 @@ body {
   background: transparent;
   color: #cbd5e1;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
-  padding: 0;
+  padding: 6px 3px;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 160ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .star-button.is-active {
