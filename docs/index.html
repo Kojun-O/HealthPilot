@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,59 +13,125 @@
 </head>
 
 <body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-block">
+        <img src="assets/logo.png" alt="Health Pilot logo" class="brand-logo">
+        <div class="header-copy">
+          <p class="header-date" id="header-date">Loading date…</p>
+        </div>
+      </div>
 
-<header class="app-header">
-  <img src="assets/logo.png" alt="Health Pilot Logo" class="brand-logo">
-  <p class="tagline">健康を、もっとシンプルに。</p>
-  <p class="subtagline">Your Personal AI Health Copilot</p>
-</header>
+      <div class="weather-summary" aria-label="Weather summary">
+        <span class="weather-icon">☀️</span>
+        <span class="weather-temp">29°C</span>
+        <span class="weather-alert-slot" aria-hidden="true"></span>
+      </div>
+    </header>
 
-<div class="container">
+    <main class="home-stack">
+      <section class="card card-mission" aria-labelledby="mission-title">
+        <div class="section-title-row">
+          <div class="mission-heading-group">
+            <p class="mission-kicker">Mission</p>
+            <h1 id="mission-title">What should I do today?</h1>
+          </div>
+          <span class="counter-pill">0/3</span>
+        </div>
 
-  <div class="greeting">
-    <h2>☀️ おはようございます！</h2>
-    <p>今日はこのMissionだけに集中しましょう。</p>
+        <ul class="mission-list">
+          <li class="mission-item">
+            <span class="mission-checkbox" aria-hidden="true"></span>
+            <span class="mission-label">Deep Breathing</span>
+          </li>
+          <li class="mission-item">
+            <span class="mission-checkbox" aria-hidden="true"></span>
+            <span class="mission-label">Drink Water</span>
+          </li>
+          <li class="mission-item">
+            <span class="mission-checkbox" aria-hidden="true"></span>
+            <span class="mission-label">10 min Walk</span>
+          </li>
+        </ul>
+
+        <details class="why-missions">
+          <summary>Why these missions?</summary>
+          <p>Small actions that support calm, hydration, and energy.</p>
+        </details>
+      </section>
+
+      <section class="card card-insight" aria-labelledby="insight-title">
+        <div class="section-title-row section-title-row-small">
+          <h2 id="insight-title">Insight</h2>
+        </div>
+        <p class="insight-copy">A calm, steady step is enough for today.</p>
+      </section>
+
+      <section class="card card-checkin" aria-labelledby="checkin-title">
+        <div class="section-title-row section-title-row-small">
+          <h2 id="checkin-title">Today's Check-in</h2>
+        </div>
+
+        <div class="checkin-list">
+          <div class="checkin-row">
+            <span>Condition</span>
+            <span class="rating-placeholder">★★★★★</span>
+          </div>
+          <div class="checkin-row">
+            <span>Sleep</span>
+            <span class="rating-placeholder">★★★★★</span>
+          </div>
+          <div class="checkin-row">
+            <span>Exercise</span>
+            <span class="rating-placeholder">★★★★★</span>
+          </div>
+          <div class="checkin-row">
+            <span>Mood</span>
+            <span class="rating-placeholder">★★★★★</span>
+          </div>
+          <div class="checkin-row">
+            <span>Stress</span>
+            <span class="rating-placeholder">★★★★★</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card card-scores" aria-label="Scores">
+        <div class="score-card">
+          <h3>Sleep</h3>
+          <p>Steady</p>
+        </div>
+        <div class="score-card">
+          <h3>Condition</h3>
+          <p>Calm</p>
+        </div>
+      </section>
+
+      <section class="card card-history" aria-labelledby="history-title">
+        <div class="section-title-row section-title-row-small">
+          <h2 id="history-title">History</h2>
+        </div>
+
+        <ul class="history-list">
+          <li><span class="history-date">7/5</span><span class="history-dots">●●○</span></li>
+          <li><span class="history-date">7/4</span><span class="history-dots">●●●</span></li>
+          <li><span class="history-date">7/3</span><span class="history-dots">●○○</span></li>
+          <li class="history-more">More</li>
+        </ul>
+      </section>
+    </main>
   </div>
 
-  <div class="card insight-card">
-    <p class="insight-title">今日のインサイト</p>
-    <h3 id="insight-headline">今日のヒント</h3>
-    <p id="insight-message">体調に合わせて、まずは小さな一歩を始めてみましょう。</p>
-  </div>
-
-  <!-- Mission First -->
-  <div class="card">
-    <h3>🎯 今日のMission</h3>
-
-    <ul id="mission-list" class="mission-list">
-    </ul>
-  </div>
-
-  <!-- Health Score -->
-  <div class="card score">
-    <h3>Health Score</h3>
-    <div id="score">89</div>
-    <p>理想まであと6点</p>
-  </div>
-
-  <!-- AI Comment -->
-  <div class="card">
-    <h3>🤖 AIコメント</h3>
-    <p id="ai-comment">
-      昨日は回復が良好でした。<br>
-      今日は睡眠だけ意識すれば十分です😊
-    </p>
-  </div>
-
-</div>
-
-<script src="js/healthEngine.js"></script>
-<script src="js/healthDataAdapter.js"></script>
-<script src="js/dailyInsightEngine.js"></script>
-<script src="js/contextBuilder.js"></script>
-<script src="js/builtInAI.js"></script>
-<script src="app.js"></script>
-<script src="js/main.js"></script>
-
+  <script>
+    const dateEl = document.getElementById('header-date');
+    if (dateEl) {
+      const now = new Date();
+      dateEl.textContent = now.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+  </script>
 </body>
 </html>

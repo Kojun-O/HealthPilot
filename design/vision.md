@@ -10,7 +10,7 @@ Turn health data into daily action.
 
 ## Vision
 
-Health Pilot helps people become healthier without requiring health knowledge.
+Health Pilot is a personal AI health copilot that helps people make better daily health decisions without requiring health expertise.
 
 Users should never wonder,
 
