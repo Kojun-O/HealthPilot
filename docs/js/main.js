@@ -251,13 +251,14 @@ function handleCheckInSelection(event) {
     return;
   }
 
-  if (event.type === "pointerup" || event.type === "touchstart") {
+  const now = Date.now();
+  const lastInteraction = Number(button.getAttribute("data-last-interaction") || 0);
+
+  if (event.type === "pointerup") {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const now = Date.now();
-  const lastInteraction = Number(button.getAttribute("data-last-interaction") || 0);
   if (event.type === "click" && now - lastInteraction < 250) {
     return;
   }
@@ -291,8 +292,6 @@ function bindCheckInEvents() {
 
   if (supportsPointerEvents) {
     checkInList.addEventListener("pointerup", handleCheckInSelection);
-  } else {
-    checkInList.addEventListener("touchstart", handleCheckInSelection, { passive: false });
   }
 
   checkInList.addEventListener("click", handleCheckInSelection);

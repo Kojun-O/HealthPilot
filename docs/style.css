@@ -223,15 +223,20 @@ body {
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
-  padding: 6px 3px;
-  min-width: 28px;
-  min-height: 28px;
+  padding: 8px 4px;
+  min-width: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: color 160ms ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .star-button.is-active {
