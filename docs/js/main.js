@@ -16,12 +16,7 @@ window.APP = APP;
 let currentMission = null;
 
 function renderAdvice(advice) {
-  const aiComment = document.getElementById("ai-comment");
-  const insightCopy = document.querySelector(".card-insight .insight-copy");
-
-  if (aiComment) {
-    aiComment.innerHTML = advice;
-  }
+  const insightCopy = document.querySelector(".mission-insight-copy");
 
   if (insightCopy) {
     insightCopy.innerHTML = advice;
@@ -178,26 +173,46 @@ function renderWhyMissions(missions) {
 function renderMission(missions) {
   const missionList = document.getElementById("mission-list") || document.querySelector(".mission-list");
   const counter = document.querySelector(".counter-pill");
+  const progressDots = document.querySelector(".mission-progress-dots");
 
   if (!missionList) return;
 
   const normalizedMissions = Array.isArray(missions) ? missions : [missions];
-  const renderedTitles = normalizedMissions.map((mission) => getMissionText(mission, "title", "今日の一歩"));
+  const renderedMissions = normalizedMissions.slice(0, 3);
 
   console.log("Selected missions for render:", normalizedMissions);
-  console.log("Rendered mission titles:", renderedTitles);
 
-  const missionItems = renderedTitles.map((title) => `
-      <li class="mission-item">
-        <span class="mission-checkbox" aria-hidden="true"></span>
-        <span class="mission-label">${escapeHtml(title)}</span>
+  const missionItems = renderedMissions.map((mission, index) => {
+    const title = getMissionText(mission, "title", "今日の一歩");
+    const subtitle = getMissionText(mission, "reason", index === 0 ? "ゆっくり呼吸してリセット" : "体を整える小さな一歩");
+    const isCompleted = index < 2;
+
+    return `
+      <li class="mission-item${isCompleted ? " is-complete" : ""}">
+        <span class="mission-icon-circle" aria-hidden="true">
+          <span class="mission-icon-glyph" aria-hidden="true">${index === 0 ? "◌" : index === 1 ? "▭" : "•"}</span>
+        </span>
+        <span class="mission-content">
+          <span class="mission-label">${escapeHtml(title)}</span>
+          <span class="mission-subtitle">${escapeHtml(subtitle)}</span>
+        </span>
+        <span class="mission-status${isCompleted ? " mission-status-complete" : ""}" aria-hidden="true">${isCompleted ? "✓" : ""}</span>
       </li>
-    `).join("");
+    `;
+  }).join("");
 
   missionList.innerHTML = missionItems;
 
+  const completedCount = Math.min(2, renderedMissions.length);
+
   if (counter) {
-    counter.textContent = `${Math.min(normalizedMissions.length, 3)}/3`;
+    counter.textContent = `${completedCount} / 3 完了`;
+  }
+
+  if (progressDots) {
+    progressDots.innerHTML = Array.from({ length: 3 }, (_, index) => `
+      <span class="mission-progress-dot${index < completedCount ? " is-active" : ""}" aria-hidden="true"></span>
+    `).join("");
   }
 
   currentMission = normalizedMissions[0] || null;

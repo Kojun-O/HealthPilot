@@ -16,43 +16,91 @@
   <div class="app-shell">
     <header class="app-header">
       <div class="brand-block">
-        <img src="assets/logo.png" alt="Health Pilot logo" class="brand-logo">
+        <img src="assets/favicon-source.png" alt="Health Pilot logo" class="brand-logo">
         <div class="header-copy">
+          <p class="brand-name">Health Pilot</p>
           <p class="header-date" id="header-date">Loading date…</p>
         </div>
       </div>
 
-      <div class="weather-summary" aria-label="Weather summary">
-        <span class="weather-icon">☀️</span>
-        <span class="weather-temp">29°C</span>
-        <span class="weather-alert-slot" aria-hidden="true"></span>
+      <div class="header-meta" aria-label="Date, weather, and notifications">
+        <div class="header-chip header-chip-date">
+          <span class="header-chip-icon" aria-hidden="true">◌</span>
+          <span id="header-date-inline">Loading date…</span>
+        </div>
+        <div class="header-chip header-chip-weather">
+          <span class="weather-icon">☀️</span>
+          <span class="weather-temp">29°C</span>
+        </div>
+        <span class="header-notification" aria-hidden="true"></span>
       </div>
     </header>
+
+    <section class="hero-scene" aria-hidden="true">
+      <div class="hero-atmosphere"></div>
+      <div class="hero-sunrise"></div>
+      <div class="hero-sun-rays"></div>
+      <div class="hero-haze hero-haze-top"></div>
+      <div class="hero-range hero-range-far"></div>
+      <div class="hero-range hero-range-mid"></div>
+      <div class="hero-range hero-range-near"></div>
+      <div class="hero-shore hero-shore-left"></div>
+      <div class="hero-shore hero-shore-right"></div>
+      <div class="hero-haze hero-haze-horizon"></div>
+      <div class="hero-water"></div>
+      <div class="hero-reflection"></div>
+      <div class="hero-ripple hero-ripple-a"></div>
+      <div class="hero-ripple hero-ripple-b"></div>
+    </section>
 
     <main class="home-stack">
       <section class="card card-mission" aria-labelledby="mission-title">
         <div class="section-title-row">
           <div class="mission-heading-group">
-            <p class="mission-kicker">Mission</p>
+            <p class="mission-kicker">MISSION</p>
             <h1 id="mission-title">What should I do today?</h1>
           </div>
-          <span class="counter-pill">0/3</span>
+          <div class="mission-progress-group">
+            <span class="counter-pill">2 / 3 完了</span>
+            <div class="mission-progress-dots" aria-hidden="true">
+              <span class="mission-progress-dot is-active"></span>
+              <span class="mission-progress-dot is-active"></span>
+              <span class="mission-progress-dot"></span>
+            </div>
+          </div>
         </div>
 
-        <ul class="mission-list">
+        <ul class="mission-list" id="mission-list">
           <li class="mission-item">
-            <span class="mission-checkbox" aria-hidden="true"></span>
-            <span class="mission-label">Deep Breathing</span>
+            <span class="mission-icon-circle" aria-hidden="true"></span>
+            <span class="mission-content">
+              <span class="mission-label">早めに寝る</span>
+              <span class="mission-subtitle">Tonight before 10:00</span>
+            </span>
+            <span class="mission-status mission-status-complete" aria-hidden="true">✓</span>
           </li>
           <li class="mission-item">
-            <span class="mission-checkbox" aria-hidden="true"></span>
-            <span class="mission-label">Drink Water</span>
+            <span class="mission-icon-circle" aria-hidden="true"></span>
+            <span class="mission-content">
+              <span class="mission-label">気分を整える</span>
+              <span class="mission-subtitle">1 minute breathing reset</span>
+            </span>
+            <span class="mission-status" aria-hidden="true"></span>
           </li>
           <li class="mission-item">
-            <span class="mission-checkbox" aria-hidden="true"></span>
-            <span class="mission-label">10 min Walk</span>
+            <span class="mission-icon-circle" aria-hidden="true"></span>
+            <span class="mission-content">
+              <span class="mission-label">深呼吸</span>
+              <span class="mission-subtitle">Take 3 calm breaths</span>
+            </span>
+            <span class="mission-status" aria-hidden="true"></span>
           </li>
         </ul>
+
+        <div class="mission-insight" aria-label="AI Comment">
+          <p class="mission-insight-label">AI Comment</p>
+          <p class="mission-insight-copy">今日のMissionは「早めに寝る」です。まずはこの3つのうち、今日の優先順位が高いものから進めましょう。</p>
+        </div>
 
         <details class="why-missions">
           <summary>Why these missions?</summary>
@@ -60,50 +108,63 @@
         </details>
       </section>
 
-      <section class="card card-insight" aria-labelledby="insight-title">
-        <div class="section-title-row section-title-row-small">
-          <h2 id="insight-title">Insight</h2>
-        </div>
-        <p class="insight-copy">A calm, steady step is enough for today.</p>
-      </section>
-
       <section class="card card-checkin" aria-labelledby="checkin-title">
         <div class="section-title-row section-title-row-small">
           <h2 id="checkin-title">Today's Check-in</h2>
+          <span class="checkin-count">5 / 5</span>
         </div>
 
-        <div class="checkin-list">
+        <div class="checkin-grid">
           <div class="checkin-row" data-category="condition">
-            <span>Condition</span>
+            <span class="checkin-icon">◌</span>
+            <span class="checkin-label">体調</span>
             <div class="rating-control" role="group" aria-label="Condition rating"></div>
           </div>
           <div class="checkin-row" data-category="sleep">
-            <span>Sleep</span>
+            <span class="checkin-icon">◌</span>
+            <span class="checkin-label">睡眠</span>
             <div class="rating-control" role="group" aria-label="Sleep rating"></div>
           </div>
           <div class="checkin-row" data-category="exercise">
-            <span>Exercise</span>
+            <span class="checkin-icon">◌</span>
+            <span class="checkin-label">運動</span>
             <div class="rating-control" role="group" aria-label="Exercise rating"></div>
           </div>
           <div class="checkin-row" data-category="mood">
-            <span>Mood</span>
+            <span class="checkin-icon">◌</span>
+            <span class="checkin-label">気分</span>
             <div class="rating-control" role="group" aria-label="Mood rating"></div>
           </div>
           <div class="checkin-row" data-category="stress">
-            <span>Stress</span>
+            <span class="checkin-icon">◌</span>
+            <span class="checkin-label">ストレス</span>
             <div class="rating-control" role="group" aria-label="Stress rating"></div>
           </div>
         </div>
       </section>
 
-      <section class="card card-scores" aria-label="Scores">
-        <div class="score-card">
-          <h3>Sleep</h3>
-          <p>Steady</p>
+      <section class="card card-scores score-card-shell" aria-labelledby="score-title">
+        <div class="section-title-row section-title-row-small score-header">
+          <h2 id="score-title">Sleep / Health</h2>
+          <span class="score-note">DAILY SUMMARY</span>
         </div>
-        <div class="score-card">
-          <h3>Condition</h3>
-          <p>Calm</p>
+        <div class="score-summary-grid">
+          <div class="score-card">
+            <span class="score-icon score-icon-sleep" aria-hidden="true">☾</span>
+            <div class="score-copy">
+              <h3>SLEEP</h3>
+              <p>78</p>
+              <span class="score-state">Steady</span>
+            </div>
+          </div>
+          <div class="score-card score-card-health">
+            <span class="score-icon score-icon-health" aria-hidden="true">♥</span>
+            <div class="score-copy">
+              <h3>HEALTH</h3>
+              <p>72</p>
+              <span class="score-state">Calm</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -120,6 +181,14 @@
         </ul>
       </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="Bottom navigation">
+      <button type="button" class="bottom-nav-item is-active" aria-current="page">Today</button>
+      <button type="button" class="bottom-nav-item">History</button>
+      <button type="button" class="bottom-nav-item">Data</button>
+      <button type="button" class="bottom-nav-item">Source</button>
+      <button type="button" class="bottom-nav-item">More</button>
+    </nav>
   </div>
 
   <script src="js/decisionEngine.js"></script>
@@ -130,13 +199,18 @@
   <script src="js/main.js"></script>
   <script>
     const dateEl = document.getElementById('header-date');
+    const dateInlineEl = document.getElementById('header-date-inline');
     if (dateEl) {
       const now = new Date();
-      dateEl.textContent = now.toLocaleDateString('en-US', {
+      const formattedDate = now.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric'
       });
+      dateEl.textContent = formattedDate;
+      if (dateInlineEl) {
+        dateInlineEl.textContent = formattedDate;
+      }
     }
   </script>
 </body>
