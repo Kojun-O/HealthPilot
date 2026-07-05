@@ -214,13 +214,19 @@ body::before {
   margin: 10px -12px 0;
   overflow: hidden;
   border-radius: 28px 28px 22px 22px;
-  background:
-    radial-gradient(circle at 16% 0%, rgba(201, 226, 255, 0.46), transparent 26%),
-    radial-gradient(circle at 84% 24%, rgba(255, 214, 155, 0.56), transparent 24%),
-    linear-gradient(180deg, #edf5fb 0%, #edf3f7 19%, #f7efe4 43%, #dce8ed 62%, #bfd4dd 78%, #aac6d2 100%);
+  background: #dbe8ee;
   box-shadow:
     inset 0 -26px 36px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
 }
 
 .hero-scene::before {
@@ -232,6 +238,8 @@ body::before {
     radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.82), transparent 28%),
     radial-gradient(circle at 72% 58%, rgba(255, 235, 196, 0.2), transparent 24%);
   opacity: 1;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .hero-scene::after {
@@ -240,6 +248,7 @@ body::before {
   inset: auto 0 0;
   height: 52px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.45) 72%, rgba(255, 255, 255, 0.8) 100%);
+  z-index: 2;
   pointer-events: none;
 }
 
