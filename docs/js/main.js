@@ -15,18 +15,8 @@ const APP = {
 window.APP = APP;
 let currentMission = null;
 
-const MOCK_CAPACITY = {
-  score: 82,
-  status: "Ready",
-  context: "Based on today's context",
-  thought: "Recovery is good today, but workload is high. Today's priority is protecting focus.",
-  factors: [
-    { icon: "😴", label: "Sleep", value: "+12" },
-    { icon: "❤️", label: "Recovery", value: "+8" },
-    { icon: "💼", label: "Workload", value: "-8" },
-    { icon: "🦶", label: "Ankle pain", value: "-4" }
-  ]
-};
+const MOCK_CAPACITY_CONTEXT = "Based on today's context";
+const MOCK_CAPACITY_THOUGHT = "Recovery is good today, but workload is high. Today's priority is protecting focus.";
 
 function renderAdvice(advice) {
   const insightCopy = document.querySelector(".mission-insight-copy");
@@ -328,9 +318,28 @@ function bindCheckInEvents() {
 
 function buildCapacityFactorItem(factor) {
   const safeFactor = factor && typeof factor === "object" ? factor : {};
-  const icon = typeof safeFactor.icon === "string" && safeFactor.icon.trim() ? safeFactor.icon : "•";
-  const label = typeof safeFactor.label === "string" && safeFactor.label.trim() ? safeFactor.label : "Factor";
-  const value = typeof safeFactor.value === "string" && safeFactor.value.trim() ? safeFactor.value : "0";
+  const label = typeof safeFactor.name === "string" && safeFactor.name.trim()
+    ? safeFactor.name
+    : typeof safeFactor.label === "string" && safeFactor.label.trim()
+      ? safeFactor.label
+      : "Factor";
+  const iconMap = {
+    Sleep: "😴",
+    Recovery: "❤️",
+    Activity: "🚶",
+    Stress: "⚡",
+    Workload: "💼",
+    Pain: "🦶"
+  };
+  const icon = typeof safeFactor.icon === "string" && safeFactor.icon.trim()
+    ? safeFactor.icon
+    : iconMap[label] || "•";
+  const impactValue = Number.isFinite(Number(safeFactor.impact))
+    ? Math.round(Number(safeFactor.impact))
+    : Number.isFinite(Number(safeFactor.value))
+      ? Math.round(Number(safeFactor.value))
+      : 0;
+  const value = `${impactValue >= 0 ? "+" : ""}${impactValue}`;
   const valueClass = value.trim().startsWith("-") ? " is-negative" : " is-positive";
 
   return `
@@ -351,7 +360,7 @@ function renderTodaysCapacity(capacity) {
   const barEl = document.getElementById("capacity-bar");
 
   const safeCapacity = capacity && typeof capacity === "object" ? capacity : {};
-  const rawScore = Number(safeCapacity.score);
+  const rawScore = Number(safeCapacity.score ?? safeCapacity.capacity);
   const score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 0;
   const filledSegments = Math.max(0, Math.min(10, Math.round(score / 10)));
 
@@ -368,13 +377,13 @@ function renderTodaysCapacity(capacity) {
   if (contextEl) {
     contextEl.textContent = typeof safeCapacity.context === "string" && safeCapacity.context.trim()
       ? safeCapacity.context
-      : "Based on today's context";
+      : MOCK_CAPACITY_CONTEXT;
   }
 
   if (thoughtEl) {
     thoughtEl.textContent = typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()
       ? safeCapacity.thought
-      : "Recovery is good today, but workload is high. Today's priority is protecting focus.";
+      : MOCK_CAPACITY_THOUGHT;
   }
 
   if (barEl) {
@@ -409,7 +418,11 @@ function startHealthPilot() {
   const rawHealthData = {
     sleepScore: 42,
     recoveryScore: 48,
+    activityScore: 38,
     stressLevel: 72,
+    stressScore: 72,
+    workloadLevel: 68,
+    painLevel: 24,
     energyLevel: 38,
     focusLevel: 45,
     bodyCondition: "肩が少し張っている",
@@ -421,12 +434,27 @@ function startHealthPilot() {
   const missions = window.DecisionEngine && typeof window.DecisionEngine.generateDailyMissions === "function"
     ? window.DecisionEngine.generateDailyMissions(dailyCondition)
     : [];
+  const capacityInput = {
+    sleepScore: rawHealthData.sleepScore,
+    recoveryScore: rawHealthData.recoveryScore,
+    activityScore: rawHealthData.activityScore,
+    stressScore: rawHealthData.stressScore,
+    workloadLevel: rawHealthData.workloadLevel,
+    painLevel: rawHealthData.painLevel
+  };
+  const capacity = window.CapacityCalculator && typeof window.CapacityCalculator.calculateCapacity === "function"
+    ? window.CapacityCalculator.calculateCapacity(capacityInput)
+    : {
+        capacity: 0,
+        status: "Recovery first",
+        factors: []
+      };
   const firstMission = Array.isArray(missions) && missions.length > 0 ? missions[0] : null;
   const safeTitle = getMissionText(firstMission, "title", "今日の一歩");
   const advice = `今日のMissionは「${safeTitle}」です。<br>
 まずはこの3つのうち、今日の優先順位が高いものから進めましょう。`;
 
-  renderTodaysCapacity(MOCK_CAPACITY);
+  renderTodaysCapacity(capacity);
   bindCapacityToggle();
   renderInsight(insight);
   renderMission(missions);
