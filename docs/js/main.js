@@ -15,6 +15,19 @@ const APP = {
 window.APP = APP;
 let currentMission = null;
 
+const MOCK_CAPACITY = {
+  score: 82,
+  status: "Ready",
+  context: "Based on today's context",
+  thought: "Recovery is good today, but workload is high. Today's priority is protecting focus.",
+  factors: [
+    { icon: "😴", label: "Sleep", value: "+12" },
+    { icon: "❤️", label: "Recovery", value: "+8" },
+    { icon: "💼", label: "Workload", value: "-8" },
+    { icon: "🦶", label: "Ankle pain", value: "-4" }
+  ]
+};
+
 function renderAdvice(advice) {
   const insightCopy = document.querySelector(".mission-insight-copy");
 
@@ -313,6 +326,85 @@ function bindCheckInEvents() {
   checkInList.dataset.bound = "true";
 }
 
+function buildCapacityFactorItem(factor) {
+  const safeFactor = factor && typeof factor === "object" ? factor : {};
+  const icon = typeof safeFactor.icon === "string" && safeFactor.icon.trim() ? safeFactor.icon : "•";
+  const label = typeof safeFactor.label === "string" && safeFactor.label.trim() ? safeFactor.label : "Factor";
+  const value = typeof safeFactor.value === "string" && safeFactor.value.trim() ? safeFactor.value : "0";
+  const valueClass = value.trim().startsWith("-") ? " is-negative" : " is-positive";
+
+  return `
+    <li class="capacity-factor-item">
+      <span class="capacity-factor-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+      <span class="capacity-factor-label">${escapeHtml(label)}</span>
+      <span class="capacity-factor-value${valueClass}">${escapeHtml(value)}</span>
+    </li>
+  `;
+}
+
+function renderTodaysCapacity(capacity) {
+  const scoreEl = document.getElementById("capacity-score");
+  const statusEl = document.getElementById("capacity-status");
+  const contextEl = document.getElementById("capacity-context");
+  const thoughtEl = document.getElementById("capacity-thought");
+  const factorsEl = document.getElementById("capacity-factors");
+  const barEl = document.getElementById("capacity-bar");
+
+  const safeCapacity = capacity && typeof capacity === "object" ? capacity : {};
+  const rawScore = Number(safeCapacity.score);
+  const score = Number.isFinite(rawScore) ? Math.max(0, Math.min(100, Math.round(rawScore))) : 0;
+  const filledSegments = Math.max(0, Math.min(10, Math.round(score / 10)));
+
+  if (scoreEl) {
+    scoreEl.textContent = String(score);
+  }
+
+  if (statusEl) {
+    statusEl.textContent = typeof safeCapacity.status === "string" && safeCapacity.status.trim()
+      ? safeCapacity.status
+      : "Ready";
+  }
+
+  if (contextEl) {
+    contextEl.textContent = typeof safeCapacity.context === "string" && safeCapacity.context.trim()
+      ? safeCapacity.context
+      : "Based on today's context";
+  }
+
+  if (thoughtEl) {
+    thoughtEl.textContent = typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()
+      ? safeCapacity.thought
+      : "Recovery is good today, but workload is high. Today's priority is protecting focus.";
+  }
+
+  if (barEl) {
+    barEl.innerHTML = Array.from({ length: 10 }, (_, index) => (
+      `<span class="capacity-segment${index < filledSegments ? " is-filled" : ""}" aria-hidden="true"></span>`
+    )).join("");
+  }
+
+  if (factorsEl) {
+    const factors = Array.isArray(safeCapacity.factors) ? safeCapacity.factors.slice(0, 4) : [];
+    factorsEl.innerHTML = factors.map(buildCapacityFactorItem).join("");
+  }
+}
+
+function bindCapacityToggle() {
+  const capacityCard = document.getElementById("today-capacity");
+  const toggle = document.getElementById("capacity-toggle");
+
+  if (!capacityCard || !toggle || toggle.dataset.bound === "true") {
+    return;
+  }
+
+  toggle.addEventListener("click", () => {
+    const expanded = capacityCard.classList.toggle("is-expanded");
+    toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+  });
+
+  toggle.dataset.bound = "true";
+}
+
 function startHealthPilot() {
   const rawHealthData = {
     sleepScore: 42,
@@ -334,6 +426,8 @@ function startHealthPilot() {
   const advice = `今日のMissionは「${safeTitle}」です。<br>
 まずはこの3つのうち、今日の優先順位が高いものから進めましょう。`;
 
+  renderTodaysCapacity(MOCK_CAPACITY);
+  bindCapacityToggle();
   renderInsight(insight);
   renderMission(missions);
   renderAdvice(advice);

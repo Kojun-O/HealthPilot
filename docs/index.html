@@ -41,6 +41,59 @@
     </section>
 
     <main class="home-stack">
+      <section class="card card-capacity" id="today-capacity" aria-labelledby="capacity-title">
+        <button
+          type="button"
+          class="capacity-toggle"
+          id="capacity-toggle"
+          aria-expanded="false"
+          aria-controls="capacity-expanded"
+        >
+          <div class="section-title-row section-title-row-small capacity-title-row">
+            <h2 id="capacity-title">Today's Capacity</h2>
+          </div>
+
+          <div class="capacity-bar" id="capacity-bar" aria-hidden="true"></div>
+
+          <p class="capacity-score" id="capacity-score">82</p>
+          <p class="capacity-status" id="capacity-status">Ready</p>
+          <p class="capacity-context" id="capacity-context">Based on today's context</p>
+        </button>
+
+        <div class="capacity-expanded" id="capacity-expanded">
+          <div class="capacity-expanded-block">
+            <p class="capacity-expanded-title">AI Thought</p>
+            <p class="capacity-thought" id="capacity-thought">Recovery is good today, but workload is high. Today's priority is protecting focus.</p>
+          </div>
+
+          <div class="capacity-expanded-block">
+            <p class="capacity-expanded-title">Top Factors</p>
+            <ul class="capacity-factors" id="capacity-factors">
+              <li class="capacity-factor-item">
+                <span class="capacity-factor-icon" aria-hidden="true">😴</span>
+                <span class="capacity-factor-label">Sleep</span>
+                <span class="capacity-factor-value is-positive">+12</span>
+              </li>
+              <li class="capacity-factor-item">
+                <span class="capacity-factor-icon" aria-hidden="true">❤️</span>
+                <span class="capacity-factor-label">Recovery</span>
+                <span class="capacity-factor-value is-positive">+8</span>
+              </li>
+              <li class="capacity-factor-item">
+                <span class="capacity-factor-icon" aria-hidden="true">💼</span>
+                <span class="capacity-factor-label">Workload</span>
+                <span class="capacity-factor-value is-negative">-8</span>
+              </li>
+              <li class="capacity-factor-item">
+                <span class="capacity-factor-icon" aria-hidden="true">🦶</span>
+                <span class="capacity-factor-label">Ankle pain</span>
+                <span class="capacity-factor-value is-negative">-4</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <section class="card card-mission" aria-labelledby="mission-title">
         <div class="section-title-row">
           <div class="mission-heading-group">
