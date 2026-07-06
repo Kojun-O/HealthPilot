@@ -1149,26 +1149,26 @@ body::before {
   }
 
   .brand-block {
-    gap: 7px;
+    gap: 6px;
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 1 1 0;
   }
 
   .brand-logo {
-    width: 58px;
-    height: 58px;
+    width: 51px;
+    height: 51px;
   }
 
   .header-copy {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .brand-name {
-    font-size: 26px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 23px;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .header-meta {
