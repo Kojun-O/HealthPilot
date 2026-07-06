@@ -136,3 +136,53 @@ test('empty daily context preserves baseline recommendation behavior', () => {
 
   assert.deepEqual(withEmptyContext, withoutContext);
 });
+
+test('prefers structured context signals over raw note interpretation', () => {
+  const capacityOutput = {
+    capacity: 62,
+    status: 'Balanced',
+    factors: [
+      { name: 'Stress', impact: -6 },
+      { name: 'Workload', impact: -5 }
+    ]
+  };
+
+  const recommendations = RecommendationEngine.generateRecommendations(capacityOutput, {
+    timeOfDay: 'morning',
+    weekday: 2,
+    recentCompletionRate: 40,
+    streakDays: 1,
+    note: 'working late tonight',
+    structuredContext: {
+      physical: {
+        pain: true,
+        painAreas: ['ankle'],
+        fatigue: false,
+        headache: false,
+        coldSymptoms: false
+      },
+      work: {
+        workload: 'normal',
+        importantEvent: false,
+        eventType: 'none',
+        overtimeRisk: false,
+        businessTrip: false,
+        deadlineRisk: false
+      },
+      mental: {
+        stressRisk: 'low',
+        motivation: 'unknown',
+        stressed: false,
+        anxious: false,
+        calm: true
+      },
+      constraints: ['avoid_high_intensity_activity'],
+      priorities: ['focus_protection']
+    }
+  });
+
+  assert.deepEqual(
+    recommendations.map((recommendation) => recommendation.id),
+    ['reduce_stress_load', 'trim_workload']
+  );
+});

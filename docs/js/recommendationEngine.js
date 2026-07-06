@@ -4,15 +4,16 @@
 // ======================================
 
 (function (root, factory) {
-  const engine = factory();
+  const engine = factory(root);
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = engine;
   }
 
   root.RecommendationEngine = engine;
-})(typeof window !== "undefined" ? window : globalThis, function () {
+})(typeof window !== "undefined" ? window : globalThis, function (root) {
   const MAX_RECOMMENDATIONS = 3;
+  const contextUnderstanding = resolveContextUnderstanding(root);
 
   const DEFAULT_CAPACITY_OUTPUT = {
     capacity: 60,
@@ -28,6 +29,26 @@
     category: "",
     note: ""
   };
+
+  function resolveContextUnderstanding(scope) {
+    if (scope && scope.ContextUnderstanding && typeof scope.ContextUnderstanding.analyzeContext === "function") {
+      return scope.ContextUnderstanding;
+    }
+
+    if (typeof require === "function") {
+      try {
+        const contextModule = require("./contextUnderstanding.js");
+
+        if (contextModule && typeof contextModule.analyzeContext === "function") {
+          return contextModule;
+        }
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
+  }
 
   function clampPercent(value, fallback) {
     const number = Number(value);
@@ -97,7 +118,141 @@
       .join(" ");
   }
 
-  function getPriorityBoostsFromDailyContext(dailyContext) {
+  function normalizeStructuredContextInput(input) {
+    const source = input && typeof input === "object" ? input : {};
+
+    const physical = source.physical && typeof source.physical === "object" ? source.physical : {};
+    const work = source.work && typeof source.work === "object" ? source.work : {};
+    const mental = source.mental && typeof source.mental === "object" ? source.mental : {};
+
+    return {
+      physical: {
+        pain: Boolean(physical.pain),
+        painAreas: Array.isArray(physical.painAreas)
+          ? physical.painAreas.filter(function (area) { return typeof area === "string" && area.trim(); })
+          : [],
+        fatigue: Boolean(physical.fatigue),
+        headache: Boolean(physical.headache),
+        coldSymptoms: Boolean(physical.coldSymptoms)
+      },
+      work: {
+        workload: typeof work.workload === "string" && work.workload.trim()
+          ? work.workload.trim().toLowerCase()
+          : "normal",
+        importantEvent: Boolean(work.importantEvent),
+        eventType: typeof work.eventType === "string" && work.eventType.trim()
+          ? work.eventType.trim().toLowerCase()
+          : "none",
+        overtimeRisk: Boolean(work.overtimeRisk),
+        businessTrip: Boolean(work.businessTrip),
+        deadlineRisk: Boolean(work.deadlineRisk)
+      },
+      mental: {
+        stressRisk: typeof mental.stressRisk === "string" && mental.stressRisk.trim()
+          ? mental.stressRisk.trim().toLowerCase()
+          : "low",
+        motivation: typeof mental.motivation === "string" && mental.motivation.trim()
+          ? mental.motivation.trim().toLowerCase()
+          : "unknown",
+        stressed: Boolean(mental.stressed),
+        anxious: Boolean(mental.anxious),
+        calm: Boolean(mental.calm)
+      },
+      constraints: Array.isArray(source.constraints)
+        ? source.constraints.filter(function (item) { return typeof item === "string" && item.trim(); })
+        : [],
+      priorities: Array.isArray(source.priorities)
+        ? source.priorities.filter(function (item) { return typeof item === "string" && item.trim(); })
+        : []
+    };
+  }
+
+  function resolveStructuredContext(dailyContextInput, normalizedDailyContext) {
+    const input = dailyContextInput && typeof dailyContextInput === "object" ? dailyContextInput : null;
+    const hasEmbeddedStructuredContext = input
+      && input.structuredContext
+      && typeof input.structuredContext === "object";
+    const looksLikeStructuredContext = input
+      && (input.physical || input.work || input.mental || input.constraints || input.priorities);
+
+    if (hasEmbeddedStructuredContext) {
+      return normalizeStructuredContextInput(input.structuredContext);
+    }
+
+    if (looksLikeStructuredContext) {
+      return normalizeStructuredContextInput(input);
+    }
+
+    if (contextUnderstanding && typeof contextUnderstanding.analyzeContext === "function") {
+      return normalizeStructuredContextInput(contextUnderstanding.analyzeContext(normalizedDailyContext));
+    }
+
+    return null;
+  }
+
+  function getPriorityBoostsFromStructuredContext(structuredContext) {
+    if (!structuredContext || typeof structuredContext !== "object") {
+      return null;
+    }
+
+    const boosts = {};
+
+    function addBoost(recommendationId, amount) {
+      boosts[recommendationId] = (boosts[recommendationId] || 0) + amount;
+    }
+
+    const physical = structuredContext.physical || {};
+    const work = structuredContext.work || {};
+    const mental = structuredContext.mental || {};
+    const constraints = Array.isArray(structuredContext.constraints) ? structuredContext.constraints : [];
+    const priorities = Array.isArray(structuredContext.priorities) ? structuredContext.priorities : [];
+
+    if (physical.pain || physical.fatigue || physical.headache || physical.coldSymptoms) {
+      addBoost("protect_recovery", 4);
+      addBoost("trim_workload", 2);
+    }
+
+    if (work.overtimeRisk || work.workload === "high") {
+      addBoost("trim_workload", 5);
+      addBoost("protect_recovery", 2);
+    }
+
+    if (work.importantEvent || work.deadlineRisk || work.eventType === "presentation") {
+      addBoost("reduce_stress_load", 4);
+      addBoost("protect_recovery", 1);
+    }
+
+    if (work.businessTrip) {
+      addBoost("trim_workload", 2);
+      addBoost("protect_recovery", 1);
+    }
+
+    if (mental.stressRisk === "high") {
+      addBoost("reduce_stress_load", 4);
+      addBoost("protect_recovery", 1);
+    } else if (mental.stressRisk === "medium") {
+      addBoost("reduce_stress_load", 3);
+    }
+
+    if (constraints.indexOf("avoid_high_intensity_activity") >= 0) {
+      addBoost("protect_recovery", 3);
+      addBoost("trim_workload", 1);
+    }
+
+    if (priorities.indexOf("focus_protection") >= 0) {
+      addBoost("reduce_stress_load", 3);
+      addBoost("protect_recovery", 1);
+    }
+
+    if (priorities.indexOf("recovery_support") >= 0) {
+      addBoost("protect_recovery", 2);
+      addBoost("trim_workload", 2);
+    }
+
+    return Object.keys(boosts).length ? boosts : null;
+  }
+
+  function getPriorityBoostsFromRawDailyContext(dailyContext) {
     const text = getContextText(dailyContext);
 
     if (!text) {
@@ -134,8 +289,9 @@
     return Object.keys(boosts).length ? boosts : null;
   }
 
-  function applyDailyContextPriority(recommendations, dailyContext) {
-    const boosts = getPriorityBoostsFromDailyContext(dailyContext);
+  function applyDailyContextPriority(recommendations, dailyContext, structuredContext) {
+    const boosts = getPriorityBoostsFromStructuredContext(structuredContext)
+      || getPriorityBoostsFromRawDailyContext(dailyContext);
 
     if (!boosts) {
       return recommendations;
@@ -204,6 +360,7 @@
   function generateRecommendations(capacityOutput, dailyContextInput) {
     const capacityState = normalizeCapacityOutput(capacityOutput);
     const dailyContext = normalizeDailyContext(dailyContextInput);
+    const structuredContext = resolveStructuredContext(dailyContextInput, dailyContext);
     const factors = capacityState.factors;
 
     const recommendations = [];
@@ -272,7 +429,7 @@
       })
       .slice(0, MAX_RECOMMENDATIONS);
 
-    return applyDailyContextPriority(sortedRecommendations, dailyContext);
+    return applyDailyContextPriority(sortedRecommendations, dailyContext, structuredContext);
   }
 
   return {
