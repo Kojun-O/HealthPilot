@@ -1148,19 +1148,34 @@ body::before {
     align-items: center;
   }
 
+  .brand-block {
+    gap: 7px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
   .brand-logo {
-    width: 68px;
-    height: 68px;
+    width: 58px;
+    height: 58px;
+  }
+
+  .header-copy {
+    min-width: 0;
+    overflow: hidden;
   }
 
   .brand-name {
-    font-size: 31px;
+    font-size: 26px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .header-meta {
     gap: 10px;
     flex-wrap: nowrap;
     justify-content: flex-end;
+    flex: 0 0 auto;
   }
 
   .header-chip {
