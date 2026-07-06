@@ -181,6 +181,32 @@
             <div class="rating-control" role="group" aria-label="Stress rating"></div>
           </div>
         </div>
+
+        <div class="checkin-context" id="checkin-context" aria-labelledby="checkin-context-title">
+          <div class="checkin-context-header">
+            <h3 id="checkin-context-title">今日の状況</h3>
+            <p class="checkin-context-subtitle">何か大事なことはありますか？</p>
+          </div>
+
+          <div class="checkin-context-categories" role="group" aria-label="Context categories">
+            <button type="button" class="context-chip" data-context-category="Physical" aria-pressed="false">身体</button>
+            <button type="button" class="context-chip" data-context-category="Mental" aria-pressed="false">メンタル</button>
+            <button type="button" class="context-chip" data-context-category="Work" aria-pressed="false">仕事</button>
+            <button type="button" class="context-chip" data-context-category="Family" aria-pressed="false">家族</button>
+            <button type="button" class="context-chip" data-context-category="Other" aria-pressed="false">その他</button>
+          </div>
+
+          <label class="checkin-context-note-label" for="checkin-context-note">メモ</label>
+          <textarea
+            id="checkin-context-note"
+            class="checkin-context-note"
+            rows="3"
+            placeholder="足首が痛い、発表前、残業予定など"
+          ></textarea>
+
+          <button type="button" class="checkin-context-save" id="checkin-context-save">保存</button>
+          <p class="checkin-context-status" id="checkin-context-status" aria-live="polite"></p>
+        </div>
       </section>
 
       <section class="card card-scores score-card-shell" aria-labelledby="score-title">

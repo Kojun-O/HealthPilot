@@ -14,9 +14,12 @@ const APP = {
 
 window.APP = APP;
 let currentMission = null;
+let dailyContextDraft = null;
 
 const MOCK_CAPACITY_CONTEXT = "Based on today's context";
 const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
+const DAILY_CONTEXT_STORAGE_KEY = "healthPilot.dailyContext";
+const DAILY_CONTEXT_CATEGORIES = ["Physical", "Mental", "Work", "Family", "Other"];
 
 function renderAdvice(advice) {
   const insightCopy = document.querySelector(".mission-insight-copy");
@@ -43,9 +46,76 @@ function getStorage() {
   }
 }
 
+function getLocalStorage() {
+  try {
+    return window.localStorage;
+  } catch (error) {
+    return null;
+  }
+}
+
 function getTodayKey() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function normalizeDailyContext(value) {
+  const safeValue = value && typeof value === "object" ? value : {};
+  const category = typeof safeValue.category === "string" && DAILY_CONTEXT_CATEGORIES.includes(safeValue.category)
+    ? safeValue.category
+    : "";
+  const note = typeof safeValue.note === "string"
+    ? safeValue.note.trim()
+    : "";
+  const date = typeof safeValue.date === "string" && safeValue.date
+    ? safeValue.date
+    : getTodayKey();
+
+  return { category, note, date };
+}
+
+function loadDailyContext() {
+  const storage = getLocalStorage();
+
+  if (!storage) {
+    return normalizeDailyContext({});
+  }
+
+  const rawValue = storage.getItem(DAILY_CONTEXT_STORAGE_KEY);
+
+  if (!rawValue) {
+    return normalizeDailyContext({});
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    const normalized = normalizeDailyContext(parsed);
+
+    if (normalized.date !== getTodayKey()) {
+      storage.removeItem(DAILY_CONTEXT_STORAGE_KEY);
+      return normalizeDailyContext({});
+    }
+
+    return normalized;
+  } catch (error) {
+    storage.removeItem(DAILY_CONTEXT_STORAGE_KEY);
+    return normalizeDailyContext({});
+  }
+}
+
+function saveDailyContext(value) {
+  const storage = getLocalStorage();
+  const normalized = normalizeDailyContext({
+    ...value,
+    date: getTodayKey()
+  });
+
+  if (!storage) {
+    return normalized;
+  }
+
+  storage.setItem(DAILY_CONTEXT_STORAGE_KEY, JSON.stringify(normalized));
+  return normalized;
 }
 
 function slugify(value) {
@@ -313,6 +383,93 @@ function bindCheckInEvents() {
   checkInList.dataset.bound = "true";
 }
 
+function renderDailyContext(context) {
+  const safeContext = normalizeDailyContext(context);
+  const noteField = document.getElementById("checkin-context-note");
+  const statusEl = document.getElementById("checkin-context-status");
+  const categoryButtons = document.querySelectorAll(".context-chip");
+
+  dailyContextDraft = {
+    category: safeContext.category,
+    note: safeContext.note
+  };
+
+  categoryButtons.forEach((button) => {
+    const isSelected = button.getAttribute("data-context-category") === safeContext.category;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  });
+
+  if (noteField) {
+    noteField.value = safeContext.note;
+  }
+
+  if (statusEl) {
+    statusEl.textContent = safeContext.category || safeContext.note
+      ? "この端末に今日の内容を保存しました"
+      : "";
+  }
+}
+
+function bindDailyContextEvents() {
+  const card = document.getElementById("checkin-context");
+  const noteField = document.getElementById("checkin-context-note");
+  const saveButton = document.getElementById("checkin-context-save");
+  const statusEl = document.getElementById("checkin-context-status");
+
+  if (!card || !noteField || !saveButton || card.dataset.bound === "true") {
+    return;
+  }
+
+  card.addEventListener("click", (event) => {
+    const button = event.target && typeof event.target.closest === "function"
+      ? event.target.closest(".context-chip")
+      : null;
+
+    if (!button) {
+      return;
+    }
+
+    const nextCategory = button.getAttribute("data-context-category") || "";
+    const currentCategory = dailyContextDraft && typeof dailyContextDraft === "object"
+      ? dailyContextDraft.category
+      : "";
+
+    dailyContextDraft = {
+      category: currentCategory === nextCategory ? "" : nextCategory,
+      note: noteField.value
+    };
+
+    renderDailyContext(dailyContextDraft);
+
+    if (statusEl) {
+      statusEl.textContent = "";
+    }
+  });
+
+  noteField.addEventListener("input", () => {
+    dailyContextDraft = {
+      category: dailyContextDraft && typeof dailyContextDraft === "object" ? dailyContextDraft.category : "",
+      note: noteField.value
+    };
+
+    if (statusEl) {
+      statusEl.textContent = "";
+    }
+  });
+
+  saveButton.addEventListener("click", () => {
+    const savedContext = saveDailyContext({
+      category: dailyContextDraft && typeof dailyContextDraft === "object" ? dailyContextDraft.category : "",
+      note: noteField.value
+    });
+
+    renderDailyContext(savedContext);
+  });
+
+  card.dataset.bound = "true";
+}
+
 function formatCapacityFactorNames(names) {
   const safeNames = Array.isArray(names)
     ? names.filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim().toLowerCase())
@@ -522,6 +679,9 @@ function startHealthPilot() {
     renderCheckIn(todayCheckIn);
     bindCheckInEvents();
   }
+
+  renderDailyContext(loadDailyContext());
+  bindDailyContextEvents();
 
   console.log("Raw health data:", rawHealthData);
   console.log("Daily insight:", insight);
