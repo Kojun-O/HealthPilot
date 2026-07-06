@@ -16,7 +16,7 @@ window.APP = APP;
 let currentMission = null;
 
 const MOCK_CAPACITY_CONTEXT = "Based on today's context";
-const MOCK_CAPACITY_THOUGHT = "Recovery is good today, but workload is high. Today's priority is protecting focus.";
+const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
 
 function renderAdvice(advice) {
   const insightCopy = document.querySelector(".mission-insight-copy");
@@ -313,6 +313,57 @@ function bindCheckInEvents() {
   checkInList.dataset.bound = "true";
 }
 
+function formatCapacityFactorNames(names) {
+  const safeNames = Array.isArray(names)
+    ? names.filter((name) => typeof name === "string" && name.trim()).map((name) => name.trim().toLowerCase())
+    : [];
+
+  if (!safeNames.length) {
+    return "";
+  }
+
+  if (safeNames.length === 1) {
+    return safeNames[0];
+  }
+
+  if (safeNames.length === 2) {
+    return `${safeNames[0]} and ${safeNames[1]}`;
+  }
+
+  return `${safeNames.slice(0, -1).join(", ")}, and ${safeNames[safeNames.length - 1]}`;
+}
+
+function buildCapacityThought(capacity) {
+  const safeCapacity = capacity && typeof capacity === "object" ? capacity : {};
+  const factors = Array.isArray(safeCapacity.factors) ? safeCapacity.factors : [];
+  const positiveNames = factors
+    .filter((factor) => Number(factor && factor.impact) > 0)
+    .slice(0, 2)
+    .map((factor) => factor.name);
+  const negativeNames = factors
+    .filter((factor) => Number(factor && factor.impact) < 0)
+    .slice(0, 2)
+    .map((factor) => factor.name);
+  const positiveVerb = positiveNames.length === 1 ? "is" : "are";
+  const negativeVerb = negativeNames.length === 1 ? "is" : "are";
+
+  if (negativeNames.length && positiveNames.length) {
+    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin, even though ${formatCapacityFactorNames(positiveNames)} ${positiveVerb} helping.`;
+  }
+
+  if (negativeNames.length) {
+    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin.`;
+  }
+
+  if (positiveNames.length) {
+    return `Today's Capacity is supported today by ${formatCapacityFactorNames(positiveNames)}.`;
+  }
+
+  return typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()
+    ? safeCapacity.thought
+    : MOCK_CAPACITY_THOUGHT;
+}
+
 function buildCapacityFactorItem(factor) {
   const safeFactor = factor && typeof factor === "object" ? factor : {};
   const label = typeof safeFactor.name === "string" && safeFactor.name.trim()
@@ -378,9 +429,7 @@ function renderTodaysCapacity(capacity) {
   }
 
   if (thoughtEl) {
-    thoughtEl.textContent = typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()
-      ? safeCapacity.thought
-      : MOCK_CAPACITY_THOUGHT;
+    thoughtEl.textContent = buildCapacityThought(safeCapacity);
   }
 
   if (barEl) {
