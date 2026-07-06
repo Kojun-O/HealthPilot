@@ -1140,23 +1140,23 @@ body::before {
 
 @media (max-width: 560px) {
   .app-shell {
-    padding: 8px 10px 16px;
+    padding: 8px 8px 16px;
   }
 
   .app-header {
-    gap: 10px;
+    gap: 8px;
     align-items: center;
   }
 
   .brand-block {
-    gap: 6px;
+    gap: 2px;
     min-width: 0;
     flex: 1 1 0;
   }
 
   .brand-logo {
-    width: 51px;
-    height: 51px;
+    width: 42px;
+    height: 42px;
   }
 
   .header-copy {
@@ -1165,7 +1165,7 @@ body::before {
   }
 
   .brand-name {
-    font-size: 23px;
+    font-size: 20px;
     max-width: none;
     overflow: visible;
     text-overflow: clip;
