@@ -1,26 +1,38 @@
-# Health Pilot Architecture v1
+# Health Pilot Architecture v2
 
 ## Overview
 
-Health Pilot transforms health data into daily action.
+Health Pilot transforms multi-source context into one clear daily decision.
 
 ```
-Health Data
+External Inputs
       │
       ▼
-Health Engine
+Health Signals + Daily Context + Calendar + Weather + History
       │
       ▼
-Health AI Core
+Context Understanding
       │
       ▼
-Today's Missions
+AI Thought Engine
       │
       ▼
-Health Score
+Recommendation Engine
       │
       ▼
-User Interface
+Mission Builder
+      │
+      ▼
+Mission Schema
+      │
+      ▼
+Explanation Engine
+      │
+      ▼
+Today's Capacity
+      │
+      ▼
+Today UI
 ```
 
 ---
@@ -30,6 +42,8 @@ User Interface
 - Apple Health
 - SOXAI Ring
 - Manual Input
+- Calendar
+- Weather
 - Future devices
 
 ---
@@ -39,18 +53,59 @@ User Interface
 Responsible for:
 
 - Data normalization
-- Score calculation
+- Internal score calculation
 - Trend analysis
+- Signal quality checks
 
 ---
 
-## Health AI Core
+## Context Understanding
 
 Responsible for:
 
-- Selecting AI Provider
-- Generating today's advice
-- Generating today's missions
+- Building a representation of today's situation
+- Combining signals, context, schedule, weather, and history
+- Producing an interpretable context state for downstream reasoning
+
+---
+
+## AI Thought Engine
+
+Responsible for:
+
+- Reasoning over today's context state
+- Estimating today's usable resources
+- Generating candidate actions before recommendation ranking
+
+---
+
+## Recommendation Engine
+
+Responsible for:
+
+- Ranking candidate actions by expected daily value
+- Selecting the most valuable recommendation for today
+- Preserving user autonomy in final decision making
+
+---
+
+## Mission Builder
+
+Responsible for:
+
+- Translating recommendations into mission-ready structure
+- Applying Mission Schema constraints
+- Returning exactly one clear daily mission
+
+---
+
+## Explanation Engine
+
+Responsible for:
+
+- Generating concise rationale for the mission
+- Expanding details only when requested
+- Keeping explanation separate from decision generation
 
 ---
 
@@ -70,10 +125,11 @@ The Built-in AI must always work without any paid account.
 
 Displays:
 
-- Health Score
+- Today's Capacity
 - Missions
-- AI Advice
-- Trends
+- AI rationale on demand
+
+Health Score is internal and should not be the primary user-facing concept.
 
 ---
 
@@ -82,3 +138,17 @@ Displays:
 Health Pilot should never show only data.
 
 Health Pilot must always recommend today's next action.
+
+Understand first.
+
+Think second.
+
+Recommend third.
+
+Explain only when asked.
+
+---
+
+## Product Vision
+
+Health Pilot helps people make better decisions by understanding today's capacity, not by maximizing health metrics.

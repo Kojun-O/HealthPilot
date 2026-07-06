@@ -1,43 +1,97 @@
-# Architecture
+# Architecture v2
 
-Health Pilot
+Health Pilot is an AI-first decision-support system.
 
-├── Web UI
+Health Score remains an internal metric for model calibration and trend interpretation.
 
-├── Health Engine
-
-├── Mission Engine
-
-├── AI Engine
-
-├── Apple Health
-
-├── SOXAI
-
-└── Storage
+Today's Capacity is the primary user-facing concept.
 
 ---
 
-Health Score
+## System Layers
 
-Sleep
+Health Pilot
 
-Activity
+├── External Inputs
 
-Recovery
+├── Health Signal Processing
 
-Weight
+├── Context Understanding
 
-Habit
+├── AI Thought Engine
+
+├── Recommendation Engine
+
+├── Mission Builder
+
+├── Explanation Engine
+
+└── Today UI
+
+---
+
+## Architecture Flow
+
+External Inputs
 
 ↓
 
-Mission
+Health Signals
+
+Daily Context
+
+Calendar
+
+Weather
+
+History
 
 ↓
 
-Forecast
+Context Understanding
 
 ↓
 
-AI
+AI Thought Engine
+
+↓
+
+Recommendation Engine
+
+↓
+
+Mission Builder
+
+↓
+
+Mission Schema
+
+↓
+
+Explanation Engine
+
+↓
+
+Today's Capacity
+
+↓
+
+Today UI
+
+---
+
+## Core Philosophy
+
+Understand first.
+
+Think second.
+
+Recommend third.
+
+Explain only when asked.
+
+---
+
+## Product Vision
+
+Health Pilot helps people make better decisions by understanding today's capacity, not by maximizing health metrics.

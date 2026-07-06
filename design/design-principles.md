@@ -1,21 +1,27 @@
 # 🌿 Health Pilot Design Principles
 
-Version 2.0
+Version 2.1
 
 ---
 
 1.
 
-Reduce cognition.
+Understand first.
 
 ---
 
 2.
 
-Action first.
+Think second.
 
 ---
 
 3.
 
-People decide.
+Recommend third.
+
+---
+
+4.
+
+Explain only when asked.

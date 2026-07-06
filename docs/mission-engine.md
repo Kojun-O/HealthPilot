@@ -6,6 +6,8 @@ The Mission Engine is the core decision system of Health Pilot.
 
 Its purpose is to transform complex health data into one clear action.
 
+It operates after context understanding and AI reasoning stages.
+
 The output is always:
 
 > One Mission.
@@ -19,6 +21,14 @@ Never multiple priorities.
 Health data should not be shown directly.
 
 Health data should become action.
+
+Understand first.
+
+Think second.
+
+Recommend third.
+
+Explain only when asked.
 
 Mission
 
@@ -48,6 +58,8 @@ The Mission Engine may use:
 - Day of week
 - User habits
 - Historical trends
+- Calendar context
+- Weather context
 
 Future versions may include additional health signals.
 
@@ -56,6 +68,10 @@ Future versions may include additional health signals.
 # Output
 
 The engine produces exactly one Mission.
+
+The surrounding AI system also outputs Today's Capacity as the primary user-facing state.
+
+Health Score remains an internal metric only.
 
 Example:
 
@@ -112,19 +128,43 @@ No UI-specific information should be included.
 
 # Architecture
 
-Health Data
+External Inputs
 
 ↓
 
-Mission Engine
+Health Signals + Daily Context + Calendar + Weather + History
 
 ↓
 
-Mission Object
+Context Understanding
 
 ↓
 
-UI Renderer
+AI Thought Engine
+
+↓
+
+Recommendation Engine
+
+↓
+
+Mission Builder (Mission Engine)
+
+↓
+
+Mission Schema
+
+↓
+
+Explanation Engine
+
+↓
+
+Today's Capacity
+
+↓
+
+Today UI
 
 The Mission Engine must never manipulate the UI.
 
@@ -136,7 +176,7 @@ Future AI providers may suggest Missions.
 
 However,
 
-The Mission Engine remains responsible for selecting the final Mission.
+The Mission Engine remains responsible for forming the final Mission from the selected recommendation.
 
 This keeps AI replaceable.
 

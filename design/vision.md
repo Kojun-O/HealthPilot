@@ -12,11 +12,32 @@ Turn health data into daily action.
 
 Health Pilot is a personal AI health copilot that helps people make better daily health decisions without requiring health expertise.
 
+Health Pilot helps people make better decisions by understanding today's capacity, not by maximizing health metrics.
+
 Users should never wonder,
 
 "What should I do today?"
 
 Health Pilot answers that question every day.
+
+---
+
+## Core User Concept
+
+Today's Capacity is the primary concept shown to users.
+
+Today's Capacity represents the AI-estimated amount of usable physical and mental resources available today.
+
+It is estimated from:
+
+- Health Signals
+- Daily Context
+- Calendar
+- Weather
+- Recent trends
+- Historical patterns
+
+Health Score remains an internal metric only.
 
 ---
 
@@ -58,3 +79,11 @@ Private.
 Actionable.
 
 Beautiful.
+
+Understand first.
+
+Think second.
+
+Recommend third.
+
+Explain only when asked.
