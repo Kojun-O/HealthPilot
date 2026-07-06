@@ -160,16 +160,13 @@ function renderWhyMissions(missions) {
   if (!details) return;
 
   const copy = details.querySelector("p");
-  const normalizedMissions = Array.isArray(missions) ? missions : [];
-  const reasons = normalizedMissions
-    .map((mission) => getMissionText(mission, "reason", ""))
-    .filter(Boolean)
-    .slice(0, 2);
+  const summary = typeof missions === "string" ? missions : "";
 
   if (copy) {
-    copy.innerHTML = reasons.length > 0
-      ? reasons.map((reason) => escapeHtml(reason)).join("<br>")
-      : "今日の状態に合わせた小さな一歩です。";
+    const safeSummary = escapeHtml(summary || "今日の状態に合わせた小さな一歩です。")
+      .replace(/\n\n/g, "<br><br>")
+      .replace(/\n/g, "<br>");
+    copy.innerHTML = safeSummary;
   }
 }
 
@@ -187,13 +184,14 @@ function renderMission(missions) {
 
   const missionItems = renderedMissions.map((mission, index) => {
     const title = getMissionText(mission, "title", "今日の一歩");
-    const subtitle = getMissionText(mission, "reason", index === 0 ? "ゆっくり呼吸してリセット" : "体を整える小さな一歩");
+    const subtitle = getMissionText(mission, "description", index === 0 ? "ゆっくり呼吸してリセット" : "体を整える小さな一歩");
+    const missionIcon = getMissionText(mission, "icon", index === 0 ? "◌" : index === 1 ? "▭" : "•");
     const isCompleted = index < 2;
 
     return `
       <li class="mission-item${isCompleted ? " is-complete" : ""}">
         <span class="mission-icon-circle" aria-hidden="true">
-          <span class="mission-icon-glyph" aria-hidden="true">${index === 0 ? "◌" : index === 1 ? "▭" : "•"}</span>
+          <span class="mission-icon-glyph" aria-hidden="true">${escapeHtml(missionIcon)}</span>
         </span>
         <span class="mission-content">
           <span class="mission-label">${escapeHtml(title)}</span>
@@ -219,7 +217,6 @@ function renderMission(missions) {
   }
 
   currentMission = normalizedMissions[0] || null;
-  renderWhyMissions(normalizedMissions);
 }
 
 function buildStarButtons(currentValue) {
@@ -431,9 +428,6 @@ function startHealthPilot() {
 
   const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
   const insight = DailyInsightEngine.generateDailyInsight(dailyCondition);
-  const missions = window.DecisionEngine && typeof window.DecisionEngine.generateDailyMissions === "function"
-    ? window.DecisionEngine.generateDailyMissions(dailyCondition)
-    : [];
   const capacityInput = {
     sleepScore: rawHealthData.sleepScore,
     recoveryScore: rawHealthData.recoveryScore,
@@ -449,16 +443,29 @@ function startHealthPilot() {
         status: "Recovery first",
         factors: []
       };
-  const firstMission = Array.isArray(missions) && missions.length > 0 ? missions[0] : null;
-  const safeTitle = getMissionText(firstMission, "title", "今日の一歩");
-  const advice = `今日のMissionは「${safeTitle}」です。<br>
-まずはこの3つのうち、今日の優先順位が高いものから進めましょう。`;
+  const dailyContext = {
+    timeOfDay: "morning",
+    weekday: new Date().getDay(),
+    recentCompletionRate: 67,
+    streakDays: 3
+  };
+  const recommendations = window.RecommendationEngine && typeof window.RecommendationEngine.generateRecommendations === "function"
+    ? window.RecommendationEngine.generateRecommendations(capacity, dailyContext)
+    : [];
+  const missions = window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
+    ? window.MissionBuilder.generateMissions(recommendations)
+    : [];
+  const missionSummary = window.MissionBuilder && typeof window.MissionBuilder.generateMissionSummary === "function"
+    ? window.MissionBuilder.generateMissionSummary(missions)
+    : "今日は回復を優先しましょう。\n\nまずは「5分ストレッチ」から始めるのがおすすめです。";
+  const advice = missionSummary.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
 
   renderTodaysCapacity(capacity);
   bindCapacityToggle();
   renderInsight(insight);
   renderMission(missions);
   renderAdvice(advice);
+  renderWhyMissions(missionSummary);
 
   const checkInEngine = window.CheckInEngine;
   if (checkInEngine && typeof checkInEngine.loadTodayCheckIn === "function") {
@@ -470,7 +477,8 @@ function startHealthPilot() {
   console.log("Raw health data:", rawHealthData);
   console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
-  console.log("Mission First:", firstMission);
+  console.log("Recommendations:", recommendations);
+  console.log("Missions:", missions);
 }
 
 startHealthPilot();

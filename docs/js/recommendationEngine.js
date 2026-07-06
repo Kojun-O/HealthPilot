@@ -12,90 +12,22 @@
 
   root.RecommendationEngine = engine;
 })(typeof window !== "undefined" ? window : globalThis, function () {
-  const DEFAULT_RECOMMENDATION_THRESHOLDS = {
-    maxScore: 100,
-    relatedSignalBonus: 4,
-    highSeverityBonus: 34,
-    mediumSeverityBonus: 20,
-    lowSeverityBonus: 10
+  const MAX_RECOMMENDATIONS = 3;
+
+  const DEFAULT_CAPACITY_OUTPUT = {
+    capacity: 60,
+    status: "Balanced",
+    factors: []
   };
 
-  const DEFAULT_PRIORITY_RULES = [
-    {
-      priority: "sleep_priority",
-      insightIds: ["sleep_debt"],
-      baseScore: 40,
-      severityBonus: {
-        high: 34,
-        medium: 22,
-        low: 12
-      },
-      reasonLead: "Sleep is below target today.",
-      order: 1
-    },
-    {
-      priority: "recovery_priority",
-      insightIds: ["recovery_low", "energy_low"],
-      baseScore: 38,
-      severityBonus: {
-        high: 32,
-        medium: 20,
-        low: 10
-      },
-      reasonLead: "Recovery signals need attention today.",
-      order: 2
-    },
-    {
-      priority: "stress_reduction",
-      insightIds: ["stress_high"],
-      baseScore: 42,
-      severityBonus: {
-        high: 34,
-        medium: 20,
-        low: 10
-      },
-      reasonLead: "Stress is elevated today.",
-      order: 3
-    },
-    {
-      priority: "movement_priority",
-      insightIds: ["activity_low"],
-      baseScore: 36,
-      severityBonus: {
-        high: 30,
-        medium: 18,
-        low: 10
-      },
-      reasonLead: "Movement is below baseline today.",
-      order: 4
-    },
-    {
-      priority: "hydration_priority",
-      insightIds: ["hydration_low"],
-      baseScore: 34,
-      severityBonus: {
-        high: 28,
-        medium: 18,
-        low: 8
-      },
-      reasonLead: "Hydration needs attention today.",
-      order: 5
-    },
-    {
-      priority: "balance_priority",
-      insightIds: ["balanced_day"],
-      baseScore: 24,
-      severityBonus: {
-        high: 0,
-        medium: 0,
-        low: 12
-      },
-      reasonLead: "Core signals are in a stable range.",
-      order: 6
-    }
-  ];
+  const MOCK_DAILY_CONTEXT = {
+    timeOfDay: "morning",
+    weekday: 1,
+    recentCompletionRate: 67,
+    streakDays: 3
+  };
 
-  function clampScore(value, fallback) {
+  function clampPercent(value, fallback) {
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
@@ -105,170 +37,155 @@
     return Math.min(100, Math.max(0, Math.round(number)));
   }
 
-  function normalizeInsight(input) {
-    if (!input || typeof input !== "object") {
+  function normalizeFactor(factor) {
+    if (!factor || typeof factor !== "object") {
       return null;
     }
 
-    const id = typeof input.id === "string" ? input.id.trim() : "";
+    const name = typeof factor.name === "string" ? factor.name.trim() : "";
 
-    if (!id) {
+    if (!name) {
       return null;
     }
 
+    const impact = Number(factor.impact);
+
+    return {
+      name,
+      impact: Number.isFinite(impact) ? Math.round(impact) : 0
+    };
+  }
+
+  function normalizeCapacityOutput(input) {
+    const source = input && typeof input === "object" ? input : {};
+    const factors = Array.isArray(source.factors) ? source.factors.map(normalizeFactor).filter(Boolean) : [];
+
+    return {
+      capacity: clampPercent(source.capacity, DEFAULT_CAPACITY_OUTPUT.capacity),
+      status: typeof source.status === "string" && source.status.trim()
+        ? source.status.trim()
+        : DEFAULT_CAPACITY_OUTPUT.status,
+      factors
+    };
+  }
+
+  function normalizeDailyContext(input) {
+    const source = input && typeof input === "object" ? input : {};
+
+    return {
+      timeOfDay: typeof source.timeOfDay === "string" && source.timeOfDay.trim()
+        ? source.timeOfDay.toLowerCase()
+        : MOCK_DAILY_CONTEXT.timeOfDay,
+      weekday: Number.isFinite(Number(source.weekday)) ? Math.round(Number(source.weekday)) : MOCK_DAILY_CONTEXT.weekday,
+      recentCompletionRate: clampPercent(source.recentCompletionRate, MOCK_DAILY_CONTEXT.recentCompletionRate),
+      streakDays: Number.isFinite(Number(source.streakDays))
+        ? Math.max(0, Math.round(Number(source.streakDays)))
+        : MOCK_DAILY_CONTEXT.streakDays
+    };
+  }
+
+  function getFactorImpact(factors, factorName) {
+    const target = String(factorName || "").toLowerCase();
+
+    for (const factor of factors) {
+      if (String(factor.name || "").toLowerCase() === target) {
+        return factor.impact;
+      }
+    }
+
+    return 0;
+  }
+
+  function hasNegativeImpact(factors, factorName, threshold) {
+    return getFactorImpact(factors, factorName) <= threshold;
+  }
+
+  function createRecommendation(id, priority, objective, reason) {
     return {
       id,
-      label: typeof input.label === "string" ? input.label : "",
-      severity: typeof input.severity === "string" ? input.severity.toLowerCase() : "low",
-      reason: typeof input.reason === "string" ? input.reason : "",
-      relatedSignals: Array.isArray(input.relatedSignals) ? input.relatedSignals.slice() : []
+      priority,
+      objective,
+      reason
     };
   }
 
-  function normalizeHealthInsights(input) {
-    const list = Array.isArray(input)
-      ? input
-      : input && Array.isArray(input.insights)
-        ? input.insights
-        : [];
+  function generateRecommendations(capacityOutput, dailyContextInput) {
+    const capacityState = normalizeCapacityOutput(capacityOutput);
+    const dailyContext = normalizeDailyContext(dailyContextInput);
+    const factors = capacityState.factors;
 
-    return list.map(normalizeInsight).filter(Boolean);
-  }
+    const recommendations = [];
 
-  function getRuleForInsight(insight, rules) {
-    for (const rule of rules) {
-      if (rule.insightIds.indexOf(insight.id) !== -1) {
-        return rule;
-      }
+    if (capacityState.capacity <= 45 || /recovery first|take it easy/i.test(capacityState.status)) {
+      const hasWorkloadRisk = hasNegativeImpact(factors, "Workload", -3);
+
+      recommendations.push(createRecommendation(
+        "protect_recovery",
+        1,
+        "Prioritize recovery",
+        hasWorkloadRisk
+          ? "Capacity is low and workload is high."
+          : "Capacity is low and recovery reserve is limited."
+      ));
     }
 
-    return null;
-  }
-
-  function getSeverityBonus(rule, severity, thresholds) {
-    if (rule.severityBonus && Object.prototype.hasOwnProperty.call(rule.severityBonus, severity)) {
-      return rule.severityBonus[severity];
+    if (hasNegativeImpact(factors, "Stress", -3)) {
+      recommendations.push(createRecommendation(
+        "reduce_stress_load",
+        2,
+        "Reduce stress load",
+        "Stress impact is reducing available capacity today."
+      ));
     }
 
-    if (severity === "high") {
-      return thresholds.highSeverityBonus;
+    if (hasNegativeImpact(factors, "Workload", -3) && capacityState.capacity <= 65) {
+      recommendations.push(createRecommendation(
+        "trim_workload",
+        3,
+        "Trim workload intensity",
+        "Workload pressure is high relative to current capacity."
+      ));
     }
 
-    if (severity === "medium") {
-      return thresholds.mediumSeverityBonus;
+    if (recommendations.length < MAX_RECOMMENDATIONS
+      && dailyContext.recentCompletionRate >= 65
+      && dailyContext.streakDays >= 3
+      && capacityState.capacity >= 55) {
+      recommendations.push(createRecommendation(
+        "protect_consistency",
+        4,
+        "Protect consistency",
+        "Completion momentum is strong and worth preserving today."
+      ));
     }
 
-    return thresholds.lowSeverityBonus;
-  }
-
-  function scoreContribution(rule, insight, thresholds) {
-    const relatedSignalCount = Array.isArray(insight.relatedSignals) ? insight.relatedSignals.length : 0;
-
-    return rule.baseScore
-      + getSeverityBonus(rule, insight.severity, thresholds)
-      + relatedSignalCount * thresholds.relatedSignalBonus;
-  }
-
-  function createSourceInsight(insight) {
-    return {
-      id: insight.id,
-      label: insight.label,
-      severity: insight.severity,
-      reason: insight.reason,
-      relatedSignals: insight.relatedSignals.slice()
-    };
-  }
-
-  function buildReason(sourceInsights, fallbackReason) {
-    const fragments = [];
-    const seen = new Set();
-
-    for (const insight of sourceInsights) {
-      if (insight.reason && !seen.has(insight.reason)) {
-        fragments.push(insight.reason);
-        seen.add(insight.reason);
-      }
+    if (recommendations.length < MAX_RECOMMENDATIONS
+      && !recommendations.length
+      && capacityState.capacity >= 60) {
+      recommendations.push(createRecommendation(
+        "maintain_balance",
+        5,
+        "Maintain balanced effort",
+        "Capacity is stable, so a balanced pace is the best objective."
+      ));
     }
 
-    if (fragments.length > 0) {
-      return fragments.slice(0, 2).join(" ");
-    }
-
-    return fallbackReason;
-  }
-
-  function buildRecommendation(bucket, thresholds) {
-    return {
-      id: bucket.priority,
-      priority: bucket.priority,
-      order: bucket.order,
-      score: clampScore(bucket.score, thresholds.maxScore),
-      reason: buildReason(bucket.sourceInsights, bucket.fallbackReason),
-      sourceInsights: bucket.sourceInsights.map(createSourceInsight)
-    };
-  }
-
-  function generateRecommendations(input, thresholdOverrides) {
-    const healthInsights = normalizeHealthInsights(input);
-    const thresholds = Object.assign({}, DEFAULT_RECOMMENDATION_THRESHOLDS, thresholdOverrides || {});
-    const priorityRules = DEFAULT_PRIORITY_RULES.map(function (rule) {
-      return Object.assign({}, rule);
-    });
-    const buckets = new Map();
-
-    for (const insight of healthInsights) {
-      const rule = getRuleForInsight(insight, priorityRules);
-
-      if (!rule) {
-        continue;
-      }
-
-      if (!buckets.has(rule.priority)) {
-        buckets.set(rule.priority, {
-          priority: rule.priority,
-          order: rule.order,
-          score: 0,
-          fallbackReason: rule.reasonLead,
-          sourceInsights: []
-        });
-      }
-
-      const bucket = buckets.get(rule.priority);
-      bucket.score += scoreContribution(rule, insight, thresholds);
-      bucket.sourceInsights.push(createSourceInsight(insight));
-    }
-
-    return Array.from(buckets.values())
-      .map(function (bucket) {
-        return buildRecommendation(bucket, thresholds);
-      })
+    return recommendations
       .sort(function (left, right) {
-        if (right.score !== left.score) {
-          return right.score - left.score;
+        if (left.priority !== right.priority) {
+          return left.priority - right.priority;
         }
 
-        if (left.order !== right.order) {
-          return left.order - right.order;
-        }
-
-        return left.priority.localeCompare(right.priority);
+        return left.id.localeCompare(right.id);
       })
-      .map(function (recommendation) {
-        return {
-          id: recommendation.id,
-          priority: recommendation.priority,
-          score: recommendation.score,
-          reason: recommendation.reason,
-          sourceInsights: recommendation.sourceInsights
-        };
-      });
+      .slice(0, MAX_RECOMMENDATIONS);
   }
 
   return {
-    DEFAULT_RECOMMENDATION_THRESHOLDS,
-    DEFAULT_PRIORITY_RULES,
-    clampScore,
-    normalizeHealthInsights,
+    MAX_RECOMMENDATIONS,
+    MOCK_DAILY_CONTEXT,
+    normalizeCapacityOutput,
+    normalizeDailyContext,
     generateRecommendations,
     createRecommendations: generateRecommendations
   };
