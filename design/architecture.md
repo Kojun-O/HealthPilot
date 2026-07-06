@@ -6,37 +6,37 @@ Health Pilot transforms multi-source context into one clear daily decision.
 
 ```
 External Inputs
-      │
+      ━E
       ▼
 Health Signals + Daily Context + Calendar + Weather + History
-      │
+      ━E
       ▼
 Daily Context Intake
-      │
+      ━E
       ▼
 Context Understanding
-      │
+      ━E
       ▼
 AI Thought Engine
-      │
+      ━E
       ▼
-Daily Context Signal Extraction
-      │
+Structured Reasoning Package
+      ━E
       ▼
 Recommendation Engine
-      │
+      ━E
       ▼
 Mission Builder
-      │
+      ━E
       ▼
 Mission Schema
-      │
+      ━E
       ▼
 Explanation Engine
-      │
+      ━E
       ▼
 Today's Capacity
-      │
+      ━E
       ▼
 Today UI
 ```
@@ -104,9 +104,9 @@ Design constraints:
 
 Responsible for:
 
-- Reasoning over today's context state
-- Estimating today's usable resources
-- Generating candidate actions before recommendation ranking
+- Transforming today's context state into structured reasoning before recommendation generation
+- Exposing explicit reasoning artifacts for downstream engines
+- Ensuring recommendation quality is grounded in situation, opportunity, risk, and objective logic
 
 AI interaction with Daily Context:
 
@@ -114,6 +114,69 @@ AI interaction with Daily Context:
 - Extract relevant signals such as constraints, obligations, symptoms, stressors, and time pressure.
 - Convert extracted signals into a structured reasoning state with confidence and recency awareness.
 - Pass extracted context signals into Recommendation Engine before ranking.
+
+### Internal Reasoning Stages (Sprint 17-3)
+
+The AI Thought Engine must complete the following stages in order.
+
+#### 1. Situation Assessment
+
+- Determine the current state from health signals and Daily Context.
+- Example statements:
+  - Recovery is sufficient.
+  - Cognitive load is high.
+  - Physical fatigue is low.
+  - Stress is increasing.
+  - Sleep debt is accumulating.
+
+#### 2. Opportunity Detection
+
+- Identify realistic windows where beneficial actions are feasible today.
+- Example opportunities:
+  - Morning focus window is available.
+  - Recovery opportunity after lunch.
+  - Walking opportunity before dinner.
+
+#### 3. Risk Detection
+
+- Identify risks that should constrain recommendation strategy.
+- Example risks:
+  - Overwork risk.
+  - Sleep deficit risk.
+  - Burnout trend.
+  - Injury aggravation risk.
+
+#### 4. Decision Objectives
+
+- Explicitly define today's objectives before recommendation generation.
+- Example objectives:
+  - Protect focus.
+  - Prioritize recovery.
+  - Maintain momentum.
+  - Avoid overload.
+  - Prepare for tomorrow.
+
+#### 5. Recommendation Generation
+
+- Generate recommendation candidates that satisfy today's explicit objectives.
+
+#### 6. Mission Builder Handoff
+
+- Provide recommendation output to Mission Builder for conversion into one concrete mission.
+
+### Structured Reasoning Output Contract
+
+The AI Thought Engine must expose structured reasoning, not only text.
+
+Required fields:
+
+- situationAssessment
+- opportunities
+- risks
+- objectives
+- reasoningSummary
+
+`reasoningSummary` is reserved for downstream explanation and must be passed to the Explanation Engine.
 
 ---
 

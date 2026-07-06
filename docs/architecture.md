@@ -62,7 +62,7 @@ AI Thought Engine
 
 ↓
 
-Daily Context Signal Extraction
+Structured Reasoning Package
 
 ↓
 
@@ -148,6 +148,75 @@ It is required because many high-impact decision factors cannot be inferred from
 - Daily Context is treated as natural-language input, not as fixed tags.
 - The AI Thought Engine extracts relevant signals from Daily Context before recommendation generation.
 - Extracted signals are combined with health signals, calendar, weather, and history in a unified reasoning state.
+
+---
+
+## AI Thought Engine
+
+The AI Thought Engine must transform raw health data and Daily Context into structured reasoning before any recommendation is generated.
+
+### Internal Reasoning Stages (Sprint 17-3)
+
+The engine completes the following stages in order:
+
+#### 1. Situation Assessment
+
+- Determine today's current state from health signals and Daily Context.
+- Example statements:
+  - Recovery is sufficient.
+  - Cognitive load is high.
+  - Physical fatigue is low.
+  - Stress is increasing.
+  - Sleep debt is accumulating.
+
+#### 2. Opportunity Detection
+
+- Identify realistic windows where beneficial actions are feasible today.
+- Example opportunities:
+  - Morning focus window is available.
+  - Recovery opportunity after lunch.
+  - Walking opportunity before dinner.
+
+#### 3. Risk Detection
+
+- Identify risks that should constrain recommendation strategy.
+- Example risks:
+  - Overwork risk.
+  - Sleep deficit risk.
+  - Burnout trend.
+  - Injury aggravation risk.
+
+#### 4. Decision Objectives
+
+- Explicitly define today's objectives.
+- Example objectives:
+  - Protect focus.
+  - Prioritize recovery.
+  - Maintain momentum.
+  - Avoid overload.
+  - Prepare for tomorrow.
+
+#### 5. Recommendation Generation
+
+- Generate recommendation candidates that satisfy today's explicit objectives.
+
+#### 6. Mission Builder Handoff
+
+- Pass recommendation output to Mission Builder for conversion into one concrete mission.
+
+### Structured Reasoning Output Contract
+
+The AI Thought Engine must expose structured reasoning rather than only producing text.
+
+Required fields:
+
+- situationAssessment
+- opportunities
+- risks
+- objectives
+- reasoningSummary
+
+`reasoningSummary` is reserved for downstream explanation and must be passed to the Explanation Engine.
 
 ---
 

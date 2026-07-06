@@ -149,7 +149,7 @@ AI Thought Engine
 
 ↓
 
-Daily Context Signal Extraction
+Structured Reasoning Package
 
 ↓
 
@@ -176,6 +176,33 @@ Today's Capacity
 Today UI
 
 The Mission Engine must never manipulate the UI.
+
+---
+
+# AI Thought Engine Contract
+
+Before recommendation ranking, the AI Thought Engine must complete explicit reasoning and expose it as structured output.
+
+Required staged reasoning order:
+
+1. Situation Assessment
+2. Opportunity Detection
+3. Risk Detection
+4. Decision Objectives
+5. Recommendation Generation
+6. Mission Builder Handoff
+
+Required structured reasoning fields:
+
+- situationAssessment
+- opportunities
+- risks
+- objectives
+- reasoningSummary
+
+The Recommendation Engine and Mission Engine consume this structured reasoning package.
+
+`reasoningSummary` is reserved for downstream use by the Explanation Engine.
 
 ---
 
