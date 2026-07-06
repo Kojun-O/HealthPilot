@@ -22,11 +22,19 @@ Health Pilot
 
 ├── AI Thought Engine
 
+├── Capacity Estimation
+
 ├── Recommendation Engine
 
 ├── Mission Builder
 
 ├── Explanation Engine
+
+├── Daily Reflection
+
+├── Learning Engine
+
+├── Personalized Model
 
 └── Today UI
 
@@ -62,11 +70,11 @@ AI Thought Engine
 
 ↓
 
-Structured Reasoning Package
+Today's Capacity
 
 ↓
 
-Recommendation Engine
+Recommendations
 
 ↓
 
@@ -74,19 +82,23 @@ Mission Builder
 
 ↓
 
-Mission Schema
+User's Day
 
 ↓
 
-Explanation Engine
+Daily Reflection
 
 ↓
 
-Today's Capacity
+Learning Engine
 
 ↓
 
-Today UI
+Personalized Model
+
+↓
+
+Tomorrow's AI
 
 ---
 
@@ -217,6 +229,96 @@ Required fields:
 - reasoningSummary
 
 `reasoningSummary` is reserved for downstream explanation and must be passed to the Explanation Engine.
+
+---
+
+## Daily Reflection
+
+Daily Reflection captures real user feedback after the day is complete.
+
+Required daily question:
+
+"Was Today's Capacity close to how you actually felt?"
+
+Allowed responses:
+
+- Very accurate
+- Mostly accurate
+- Not accurate
+
+Optional input:
+
+- Free-text comment describing why capacity differed from lived experience
+
+Examples:
+
+- "Unexpected customer issue."
+- "My headache got worse."
+- "I felt much more energetic than expected."
+
+---
+
+## Learning Engine Layer
+
+The Learning Engine is a separate architecture layer that improves tomorrow's predictions while preserving all historical observations.
+
+### Learning Inputs
+
+- Today's Capacity prediction
+- Daily Reflection response
+- Daily Context
+- Completed Missions
+- Health Signals
+- Historical trends
+
+### Personalization Targets
+
+- Capacity estimation
+- Recommendation weighting
+- Mission selection
+- Explanation quality
+
+### Data Integrity Rule
+
+- Never overwrite historical daily records.
+- Keep past observations immutable.
+- Produce versioned personalization states for future inference only.
+
+### Required Learning Outputs
+
+- predictionAccuracy
+- confidence
+- personalizedWeights
+- learningInsights
+
+---
+
+## Personalized Model
+
+Personalized Model is the persistent state produced by the Learning Engine and consumed by tomorrow's AI pipeline.
+
+Responsibilities:
+
+- Maintain versioned personalization parameters
+- Expose read-only state for decision modules
+- Allow confidence-based fallback to baseline behavior
+
+Supporting components:
+
+- Mission Schema constrains mission format during Mission Builder output.
+- Explanation Engine generates rationale from decision outputs and learning context.
+
+---
+
+## Personalization Flow
+
+1. Estimate Today's Capacity from current context.
+2. Generate recommendation candidates and select one mission.
+3. Observe user's day and mission completion behavior.
+4. Collect Daily Reflection accuracy feedback.
+5. Compare prediction vs lived experience in Learning Engine.
+6. Update versioned Personalized Model for tomorrow.
+7. Re-enter the main architecture flow with improved priors.
 
 ---
 

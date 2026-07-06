@@ -20,25 +20,28 @@ Context Understanding
 AI Thought Engine
       ━E
       ▼
-Structured Reasoning Package
+Today's Capacity
       ━E
       ▼
-Recommendation Engine
+Recommendations
       ━E
       ▼
 Mission Builder
       ━E
       ▼
-Mission Schema
+User's Day
       ━E
       ▼
-Explanation Engine
+Daily Reflection
       ━E
       ▼
-Today's Capacity
+Learning Engine
       ━E
       ▼
-Today UI
+Personalized Model
+      ━E
+      ▼
+Tomorrow's AI
 ```
 
 ---
@@ -188,6 +191,11 @@ Responsible for:
 - Selecting the most valuable recommendation for today
 - Preserving user autonomy in final decision making
 
+Personalization hook:
+
+- Apply user-specific recommendation weighting from the Personalized Model
+- Keep a baseline strategy available when confidence is low
+
 ---
 
 ## Mission Builder
@@ -207,6 +215,89 @@ Responsible for:
 - Generating concise rationale for the mission
 - Expanding details only when requested
 - Keeping explanation separate from decision generation
+
+Personalization hook:
+
+- Adapt explanation style and emphasis using learned user preferences and outcomes
+
+---
+
+## Daily Reflection
+
+Responsible for collecting end-of-day user feedback after the mission period.
+
+Required daily question:
+
+"Was Today's Capacity close to how you actually felt?"
+
+Allowed responses:
+
+- Very accurate
+- Mostly accurate
+- Not accurate
+
+Optional input:
+
+- Free-text comment explaining why accuracy differed
+
+Examples:
+
+- "Unexpected customer issue."
+- "My headache got worse."
+- "I felt much more energetic than expected."
+
+---
+
+## Learning Engine
+
+The Learning Engine is a separate architecture layer that continuously improves future predictions without rewriting the past.
+
+It compares:
+
+- Today's Capacity prediction
+- End-of-day reflection
+- Daily Context
+- Completed Missions
+- Health Signals
+- Historical trends
+
+It gradually personalizes:
+
+- Capacity estimation
+- Recommendation weighting
+- Mission selection
+- Explanation quality
+
+It identifies which signals are most predictive for this individual user over time.
+
+### Non-Destructive Learning Rule
+
+- Historical observations are append-only and immutable.
+- Learning updates generate new model states for future decisions.
+- Recomputed insights must be versioned, never backfilled by overwriting original daily records.
+
+### Output Contract
+
+The Learning Engine provides structured outputs for next-day decision layers.
+
+Required fields:
+
+- predictionAccuracy
+- confidence
+- personalizedWeights
+- learningInsights
+
+---
+
+## Personalized Model
+
+Responsible for carrying forward the latest learned parameters into tomorrow's decision cycle.
+
+Responsibilities:
+
+- Store versioned personalization state
+- Provide stable read access for Context Understanding, AI Thought Engine, and Recommendation Engine
+- Support safe fallback to baseline behavior when personalization confidence is low
 
 ---
 
@@ -245,6 +336,8 @@ Understand first.
 Think second.
 
 Recommend third.
+
+Learn continuously.
 
 Explain only when asked.
 

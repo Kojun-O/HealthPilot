@@ -149,11 +149,11 @@ AI Thought Engine
 
 ↓
 
-Structured Reasoning Package
+Today's Capacity
 
 ↓
 
-Recommendation Engine
+Recommendations
 
 ↓
 
@@ -161,21 +161,86 @@ Mission Builder (Mission Engine)
 
 ↓
 
-Mission Schema
+User's Day
 
 ↓
 
-Explanation Engine
+Daily Reflection
 
 ↓
 
-Today's Capacity
+Learning Engine
 
 ↓
 
-Today UI
+Personalized Model
+
+↓
+
+Tomorrow's AI
 
 The Mission Engine must never manipulate the UI.
+
+Supporting components:
+
+- Mission Schema validates mission structure.
+- Explanation Engine generates reasoning text from selected decision outputs.
+
+Learning loop integration:
+
+- The mission outcome is an explicit input to Daily Reflection and Learning Engine.
+- Learning outputs must influence future recommendation weighting and mission selection only.
+- Historical mission records must remain immutable.
+
+---
+
+# Daily Reflection Contract
+
+The system asks once per day:
+
+"Was Today's Capacity close to how you actually felt?"
+
+Allowed responses:
+
+- Very accurate
+- Mostly accurate
+- Not accurate
+
+Optional:
+
+- Free-text explanation of unexpected events or symptom changes
+
+Examples:
+
+- "Unexpected customer issue."
+- "My headache got worse."
+- "I felt much more energetic than expected."
+
+---
+
+# Learning Engine Contract
+
+Learning Engine compares:
+
+- Today's Capacity prediction
+- Daily Reflection feedback
+- Daily Context
+- Completed Missions
+- Health Signals
+- Historical trends
+
+It outputs:
+
+- predictionAccuracy
+- confidence
+- personalizedWeights
+- learningInsights
+
+Data integrity requirement:
+
+- No historical overwrite
+- Append-only observations
+- Versioned updates for future inference
 
 ---
 
