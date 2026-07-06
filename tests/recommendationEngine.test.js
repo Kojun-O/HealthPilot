@@ -75,3 +75,64 @@ test('uses mock daily context defaults and returns max three sorted by priority'
   assert.ok(recommendations[0].priority <= recommendations[1].priority);
   assert.ok(recommendations[1].priority <= recommendations[2].priority);
 });
+
+test('reprioritizes recommendations when daily context mentions working late', () => {
+  const capacityOutput = {
+    capacity: 62,
+    status: 'Balanced',
+    factors: [
+      { name: 'Stress', impact: -6 },
+      { name: 'Workload', impact: -5 }
+    ]
+  };
+
+  const baseline = RecommendationEngine.generateRecommendations(capacityOutput, {
+    timeOfDay: 'morning',
+    weekday: 2,
+    recentCompletionRate: 40,
+    streakDays: 1,
+    note: ''
+  });
+
+  const withContext = RecommendationEngine.generateRecommendations(capacityOutput, {
+    timeOfDay: 'morning',
+    weekday: 2,
+    recentCompletionRate: 40,
+    streakDays: 1,
+    note: 'Working late tonight.'
+  });
+
+  assert.deepEqual(
+    baseline.map((recommendation) => recommendation.id),
+    ['reduce_stress_load', 'trim_workload']
+  );
+
+  assert.deepEqual(
+    withContext.map((recommendation) => recommendation.id),
+    ['trim_workload', 'reduce_stress_load']
+  );
+
+  assert.deepEqual(
+    withContext.map((recommendation) => recommendation.priority),
+    [1, 2]
+  );
+});
+
+test('empty daily context preserves baseline recommendation behavior', () => {
+  const capacityOutput = {
+    capacity: 62,
+    status: 'Balanced',
+    factors: [
+      { name: 'Stress', impact: -6 },
+      { name: 'Workload', impact: -5 }
+    ]
+  };
+
+  const withoutContext = RecommendationEngine.generateRecommendations(capacityOutput);
+  const withEmptyContext = RecommendationEngine.generateRecommendations(capacityOutput, {
+    category: '',
+    note: '   '
+  });
+
+  assert.deepEqual(withEmptyContext, withoutContext);
+});

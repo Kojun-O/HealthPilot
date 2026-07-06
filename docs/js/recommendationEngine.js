@@ -24,7 +24,9 @@
     timeOfDay: "morning",
     weekday: 1,
     recentCompletionRate: 67,
-    streakDays: 3
+    streakDays: 3,
+    category: "",
+    note: ""
   };
 
   function clampPercent(value, fallback) {
@@ -80,8 +82,98 @@
       recentCompletionRate: clampPercent(source.recentCompletionRate, MOCK_DAILY_CONTEXT.recentCompletionRate),
       streakDays: Number.isFinite(Number(source.streakDays))
         ? Math.max(0, Math.round(Number(source.streakDays)))
-        : MOCK_DAILY_CONTEXT.streakDays
+        : MOCK_DAILY_CONTEXT.streakDays,
+      category: typeof source.category === "string" ? source.category.trim() : "",
+      note: typeof source.note === "string" ? source.note.trim() : ""
     };
+  }
+
+  function getContextText(dailyContext) {
+    return [dailyContext.category, dailyContext.note]
+      .map(function (value) {
+        return typeof value === "string" ? value.trim().toLowerCase() : "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function getPriorityBoostsFromDailyContext(dailyContext) {
+    const text = getContextText(dailyContext);
+
+    if (!text) {
+      return null;
+    }
+
+    const boosts = {};
+
+    function addBoost(recommendationId, amount) {
+      boosts[recommendationId] = (boosts[recommendationId] || 0) + amount;
+    }
+
+    if (/(hurt|hurts|injury|injured|pain|sore|soreness|ankle|knee|back|recovery)/i.test(text)
+      || /physical/i.test(dailyContext.category)) {
+      addBoost("protect_recovery", 4);
+      addBoost("trim_workload", 3);
+      addBoost("reduce_stress_load", 1);
+    }
+
+    if (/(presentation|exam|deadline|interview|focus|concentrat|stress|anxious|nervous|sleep)/i.test(text)
+      || /mental/i.test(dailyContext.category)) {
+      addBoost("reduce_stress_load", 4);
+      addBoost("protect_recovery", 2);
+      addBoost("trim_workload", 1);
+    }
+
+    if (/(working late|late tonight|overtime|long day|extended hours|night shift|busy night)/i.test(text)
+      || /work/i.test(dailyContext.category)) {
+      addBoost("trim_workload", 5);
+      addBoost("protect_recovery", 2);
+      addBoost("reduce_stress_load", 1);
+    }
+
+    return Object.keys(boosts).length ? boosts : null;
+  }
+
+  function applyDailyContextPriority(recommendations, dailyContext) {
+    const boosts = getPriorityBoostsFromDailyContext(dailyContext);
+
+    if (!boosts) {
+      return recommendations;
+    }
+
+    return recommendations
+      .map(function (recommendation, index) {
+        const boost = boosts[recommendation.id] || 0;
+
+        return {
+          recommendation,
+          index,
+          score: boost
+        };
+      })
+      .sort(function (left, right) {
+        if (left.score !== right.score) {
+          return right.score - left.score;
+        }
+
+        if (left.recommendation.priority !== right.recommendation.priority) {
+          return left.recommendation.priority - right.recommendation.priority;
+        }
+
+        if (left.recommendation.id !== right.recommendation.id) {
+          return left.recommendation.id.localeCompare(right.recommendation.id);
+        }
+
+        return left.index - right.index;
+      })
+      .map(function (entry, index) {
+        return createRecommendation(
+          entry.recommendation.id,
+          index + 1,
+          entry.recommendation.objective,
+          entry.recommendation.reason
+        );
+      });
   }
 
   function getFactorImpact(factors, factorName) {
@@ -170,7 +262,7 @@
       ));
     }
 
-    return recommendations
+    const sortedRecommendations = recommendations
       .sort(function (left, right) {
         if (left.priority !== right.priority) {
           return left.priority - right.priority;
@@ -179,6 +271,8 @@
         return left.id.localeCompare(right.id);
       })
       .slice(0, MAX_RECOMMENDATIONS);
+
+    return applyDailyContextPriority(sortedRecommendations, dailyContext);
   }
 
   return {

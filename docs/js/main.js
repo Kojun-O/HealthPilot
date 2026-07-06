@@ -649,11 +649,14 @@ function startHealthPilot() {
         status: "Recovery first",
         factors: []
       };
+  const savedDailyContext = loadDailyContext();
   const dailyContext = {
     timeOfDay: "morning",
     weekday: new Date().getDay(),
     recentCompletionRate: 67,
-    streakDays: 3
+    streakDays: 3,
+    category: savedDailyContext.category,
+    note: savedDailyContext.note
   };
   const recommendations = window.RecommendationEngine && typeof window.RecommendationEngine.generateRecommendations === "function"
     ? window.RecommendationEngine.generateRecommendations(capacity, dailyContext)
@@ -680,7 +683,7 @@ function startHealthPilot() {
     bindCheckInEvents();
   }
 
-  renderDailyContext(loadDailyContext());
+  renderDailyContext(savedDailyContext);
   bindDailyContextEvents();
 
   console.log("Raw health data:", rawHealthData);
