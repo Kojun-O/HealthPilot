@@ -58,6 +58,7 @@ The Mission Engine may use:
 - Day of week
 - User habits
 - Historical trends
+- Daily Context (physical, mental, work/study, personal/family, free notes)
 - Calendar context
 - Weather context
 
@@ -136,11 +137,19 @@ Health Signals + Daily Context + Calendar + Weather + History
 
 ↓
 
+Daily Context Intake (Natural Language)
+
+↓
+
 Context Understanding
 
 ↓
 
 AI Thought Engine
+
+↓
+
+Daily Context Signal Extraction
 
 ↓
 
@@ -179,6 +188,13 @@ However,
 The Mission Engine remains responsible for forming the final Mission from the selected recommendation.
 
 This keeps AI replaceable.
+
+Daily Context AI interaction rules:
+
+- Daily Context must be interpreted as natural-language input.
+- AI must never rely on predefined keywords only.
+- AI Thought Engine extracts relevant signals from Daily Context before recommendation generation.
+- Extracted signals must be merged with health signals and other context before ranking recommendations.
 
 ---
 

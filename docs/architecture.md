@@ -16,6 +16,8 @@ Health Pilot
 
 ├── Health Signal Processing
 
+├── Daily Context Intake
+
 ├── Context Understanding
 
 ├── AI Thought Engine
@@ -48,11 +50,19 @@ History
 
 ↓
 
+Daily Context Intake
+
+↓
+
 Context Understanding
 
 ↓
 
 AI Thought Engine
+
+↓
+
+Daily Context Signal Extraction
 
 ↓
 
@@ -89,6 +99,55 @@ Think second.
 Recommend third.
 
 Explain only when asked.
+
+---
+
+## Daily Context Layer
+
+Daily Context captures user-provided, non-sensor information about today's real constraints.
+
+It is required because many high-impact decision factors cannot be inferred from wearable or passive health data.
+
+### Required Categories
+
+1. Physical
+	- Headache
+	- Ankle pain
+	- Cold symptoms
+	- Fatigue
+	- Muscle soreness
+
+2. Mental
+	- Feeling stressed
+	- Feeling motivated
+	- Feeling anxious
+	- Feeling calm
+
+3. Work / Study
+	- Important presentation
+	- Heavy workload
+	- Deadline today
+	- Business trip
+
+4. Personal / Family
+	- Family event
+	- Child care
+	- Poor sleep because of baby
+	- Social event
+
+5. Free Notes
+	- Users can write anything in natural language
+	- Example: "My left ankle hurts."
+	- Example: "I have an important customer presentation next week."
+	- Example: "I'll probably work until 10 PM."
+	- Example: "I feel much better today."
+
+### Processing Rules
+
+- The AI must never rely on predefined keywords only.
+- Daily Context is treated as natural-language input, not as fixed tags.
+- The AI Thought Engine extracts relevant signals from Daily Context before recommendation generation.
+- Extracted signals are combined with health signals, calendar, weather, and history in a unified reasoning state.
 
 ---
 

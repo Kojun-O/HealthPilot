@@ -11,10 +11,16 @@ External Inputs
 Health Signals + Daily Context + Calendar + Weather + History
       │
       ▼
+Daily Context Intake
+      │
+      ▼
 Context Understanding
       │
       ▼
 AI Thought Engine
+      │
+      ▼
+Daily Context Signal Extraction
       │
       ▼
 Recommendation Engine
@@ -67,6 +73,31 @@ Responsible for:
 - Combining signals, context, schedule, weather, and history
 - Producing an interpretable context state for downstream reasoning
 
+### Daily Context (Non-Sensor Layer)
+
+Daily Context represents real-world factors that cannot be captured automatically from health sensors.
+
+Required categories:
+
+- Physical (headache, ankle pain, cold symptoms, fatigue, muscle soreness)
+- Mental (stressed, motivated, anxious, calm)
+- Work / Study (important presentation, heavy workload, deadline today, business trip)
+- Personal / Family (family event, child care, poor sleep because of baby, social event)
+- Free Notes (open natural-language input)
+
+Free Notes examples:
+
+- "My left ankle hurts."
+- "I have an important customer presentation next week."
+- "I'll probably work until 10 PM."
+- "I feel much better today."
+
+Design constraints:
+
+- Never depend on predefined keywords only.
+- Treat all Daily Context as natural-language input.
+- Preserve user intent and uncertainty in downstream reasoning.
+
 ---
 
 ## AI Thought Engine
@@ -76,6 +107,13 @@ Responsible for:
 - Reasoning over today's context state
 - Estimating today's usable resources
 - Generating candidate actions before recommendation ranking
+
+AI interaction with Daily Context:
+
+- Parse Daily Context text semantically, not by keyword lookup only.
+- Extract relevant signals such as constraints, obligations, symptoms, stressors, and time pressure.
+- Convert extracted signals into a structured reasoning state with confidence and recency awareness.
+- Pass extracted context signals into Recommendation Engine before ranking.
 
 ---
 
