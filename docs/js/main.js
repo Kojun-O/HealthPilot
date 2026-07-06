@@ -297,7 +297,7 @@ function handleCheckInSelection(event) {
 }
 
 function bindCheckInEvents() {
-  const checkInList = document.querySelector(".checkin-list");
+  const checkInList = document.querySelector(".checkin-grid");
 
   if (!checkInList || checkInList.dataset.bound === "true") {
     return;

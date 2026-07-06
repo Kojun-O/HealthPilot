@@ -231,6 +231,8 @@ body::before {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  object-position: center center;
   z-index: 1;
 }
 
@@ -861,9 +863,9 @@ body::before {
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
-  padding: 0;
-  min-width: 12px;
-  min-height: 14px;
+  padding: 2px 1px;
+  min-width: 16px;
+  min-height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1152,7 +1154,7 @@ body::before {
   }
 
   .brand-name {
-    font-size: 33px;
+    font-size: 31px;
   }
 
   .header-meta {
@@ -1309,8 +1311,8 @@ body::before {
   }
 
   .star-button {
-    min-width: 12px;
-    min-height: 14px;
+    min-width: 18px;
+    min-height: 20px;
     border-radius: 0;
     font-size: 13px;
   }
