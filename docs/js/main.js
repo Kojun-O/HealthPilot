@@ -153,6 +153,23 @@ function setMissionCompleted(mission, completed) {
   storage.setItem(getMissionCompletionStorageKey(mission), completed ? "true" : "false");
 }
 
+function buildMissionCompletionProfile(missions) {
+  const safeMissions = Array.isArray(missions) ? missions : [];
+  const completedMissionIds = safeMissions
+    .filter((mission) => isMissionCompleted(mission))
+    .map((mission) => mission.id)
+    .filter((id) => typeof id === "string" && id.trim());
+  const totalCount = safeMissions.length;
+  const completedCount = completedMissionIds.length;
+
+  return {
+    completedMissionIds,
+    completedCount,
+    totalCount,
+    completionRate: totalCount > 0 ? completedCount / totalCount : 0
+  };
+}
+
 function getMissionText(mission, field, fallback) {
   const value = mission && typeof mission === "object" ? mission[field] : undefined;
 
@@ -716,8 +733,20 @@ function startHealthPilot() {
     : window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
       ? window.MissionBuilder.generateMissions(recommendations)
       : [];
+  const missionCompletion = buildMissionCompletionProfile(missions);
+  const prediction = window.PredictionEngine && typeof window.PredictionEngine.calculateTomorrowCapacity === "function"
+    ? window.PredictionEngine.calculateTomorrowCapacity({
+        currentCapacity: capacity.capacity,
+        missions,
+        missionCompletion
+      })
+    : {
+        currentCapacity: Number.isFinite(Number(capacity && capacity.capacity)) ? Number(capacity.capacity) : 0,
+        projectedCapacity: Number.isFinite(Number(capacity && capacity.capacity)) ? Number(capacity.capacity) : 0,
+        projectedDelta: 0
+      };
   const missionSummary = window.MissionEngine && typeof window.MissionEngine.generateMissionSummary === "function"
-    ? window.MissionEngine.generateMissionSummary(missions)
+    ? window.MissionEngine.generateMissionSummary(missions, prediction)
     : window.MissionBuilder && typeof window.MissionBuilder.generateMissionSummary === "function"
       ? window.MissionBuilder.generateMissionSummary(missions)
       : "今日は回復を優先しましょう。\n\nまずは「5分ストレッチ」から始めるのがおすすめです。";
@@ -750,6 +779,7 @@ function startHealthPilot() {
   console.log("Context:", context);
   console.log("Mission plan:", missionPlan);
   console.log("Missions:", missions);
+  console.log("Prediction:", prediction);
 }
 
 startHealthPilot();

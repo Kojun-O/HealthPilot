@@ -354,15 +354,22 @@
     return prioritized.slice(0, limit);
   }
 
-  function generateMissionSummary(missionsInput) {
+  function generateMissionSummary(missionsInput, predictionInput) {
     const missions = Array.isArray(missionsInput) ? missionsInput : [];
     const top = missions[0] && typeof missions[0] === "object" ? missions[0] : null;
+    const prediction = predictionInput && typeof predictionInput === "object" ? predictionInput : {};
+    const projectedDelta = Number(prediction.projectedDelta);
 
     if (!top) {
       return "今日は回復を優先しましょう。\n\nまずは小さな一歩から始めましょう。";
     }
 
-    return `今日は「${top.title}」を優先しましょう。\n\nまずは今すぐ着手するとTomorrow +${top.impact}が見込めます。`;
+    if (Number.isFinite(projectedDelta) && projectedDelta !== 0) {
+      const sign = projectedDelta > 0 ? "+" : "";
+      return `今日は「${top.title}」を優先しましょう。\n\nまずは今すぐ着手するとTomorrow ${sign}${projectedDelta}が見込めます。`;
+    }
+
+    return `今日は「${top.title}」を優先しましょう。\n\nまずは今すぐ着手して、状態の維持・改善につなげましょう。`;
   }
 
   function buildMissionPlan(input) {

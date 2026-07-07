@@ -52,3 +52,12 @@ test('falls back safely when recommendations are missing', () => {
   assert.ok(missionPlan.topMissions.length >= 1);
   assert.equal(missionPlan.topMissions[0].id.includes('fallback'), true);
 });
+
+test('generateMissionSummary reads projected delta from prediction input', () => {
+  const summary = MissionEngine.generateMissionSummary(
+    [{ id: 'm1', title: '22:00までに就寝', impact: 1 }],
+    { projectedDelta: 5 }
+  );
+
+  assert.match(summary, /Tomorrow \+5/);
+});
