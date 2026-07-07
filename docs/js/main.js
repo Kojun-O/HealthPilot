@@ -697,11 +697,18 @@ function startHealthPilot() {
   const recommendations = window.RecommendationEngine && typeof window.RecommendationEngine.generateRecommendations === "function"
     ? window.RecommendationEngine.generateRecommendations(capacity, dailyContext)
     : [];
+  const todayData = {
+    ...rawHealthData,
+    capacity,
+    dailyContext
+  };
+  const context = window.ContextEngine && typeof window.ContextEngine.buildContext === "function"
+    ? window.ContextEngine.buildContext(todayData)
+    : null;
   const missionPlan = window.MissionEngine && typeof window.MissionEngine.buildMissionPlan === "function"
     ? window.MissionEngine.buildMissionPlan({
         recommendations,
-        capacity,
-        dailyContext
+        context
       })
     : null;
   const missions = missionPlan && Array.isArray(missionPlan.topMissions) && missionPlan.topMissions.length
@@ -740,6 +747,7 @@ function startHealthPilot() {
   console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
   console.log("Recommendations:", recommendations);
+  console.log("Context:", context);
   console.log("Mission plan:", missionPlan);
   console.log("Missions:", missions);
 }

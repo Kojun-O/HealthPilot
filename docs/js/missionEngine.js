@@ -198,50 +198,74 @@
       : [];
   }
 
-  function getCapacityScore(capacity) {
-    const value = capacity && typeof capacity === "object" ? Number(capacity.capacity ?? capacity.score) : NaN;
-    return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 50;
-  }
+  function normalizeContext(input) {
+    const source = input && typeof input === "object" ? input : {};
 
-  function getFactorImpactMap(capacity) {
-    const factors = capacity && typeof capacity === "object" && Array.isArray(capacity.factors)
-      ? capacity.factors
-      : [];
+    const recovery = String(source.recovery || "medium").toLowerCase();
+    const stress = String(source.stress || "medium").toLowerCase();
+    const focusDemand = String(source.focusDemand || "medium").toLowerCase();
+    const energy = String(source.energy || "medium").toLowerCase();
+    const primaryLeverage = String(source.primaryLeverage || "consistency").toLowerCase();
+    const recommendationMode = String(source.recommendationMode || "balanced").toLowerCase();
+    const confidence = Number(source.confidence);
 
-    return factors.reduce(function (acc, factor) {
-      const name = typeof factor.name === "string" ? factor.name.trim().toLowerCase() : "";
-      const impact = Number(factor.impact);
-
-      if (name && Number.isFinite(impact)) {
-        acc[name] = Math.round(impact);
-      }
-
-      return acc;
-    }, {});
+    return {
+      recovery: recovery === "low" || recovery === "high" ? recovery : "medium",
+      stress: stress === "low" || stress === "high" ? stress : "medium",
+      sleepDebt: Boolean(source.sleepDebt),
+      focusDemand: focusDemand === "low" || focusDemand === "high" ? focusDemand : "medium",
+      energy: energy === "low" || energy === "high" ? energy : "medium",
+      confidence: Number.isFinite(confidence) ? Math.max(0.55, Math.min(0.95, confidence)) : 0.7,
+      primaryLeverage,
+      recommendationMode
+    };
   }
 
   function resolveTemplateList(recommendationId) {
     return TEMPLATE_BANK[recommendationId] || TEMPLATE_BANK.fallback;
   }
 
-  function buildCandidate(template, recommendation, rankIndex, templateIndex, capacityScore, factorImpactMap) {
-    const stressImpact = Number(factorImpactMap.stress || 0);
-    const workloadImpact = Number(factorImpactMap.workload || 0);
-    const recoveryImpact = Number(factorImpactMap.recovery || 0);
+  function buildCandidate(template, recommendation, rankIndex, templateIndex, context) {
+    const category = String(template.category || "").toLowerCase();
+
+    const isSleepOrRecovery = /sleep|recovery/.test(category);
+    const isFocusOrMental = /focus|mental/.test(category);
+    const isConsistencyCategory = /hydration|activity/.test(category);
 
     const recommendationWeight = Math.max(0, 6 - recommendation.priority) * 3;
     const rankPenalty = rankIndex * 2;
-    const lowCapacityBoost = capacityScore <= 45 ? 5 : capacityScore <= 60 ? 2 : 0;
-    const stressBoost = stressImpact < 0 && /stress|mental|focus/i.test(template.category) ? 2 : 0;
-    const workloadBoost = workloadImpact < 0 && /focus|recovery/i.test(template.category) ? 2 : 0;
-    const recoveryBoost = recoveryImpact > 0 && /sleep|recovery/i.test(template.category) ? 1 : 0;
+    const lowEnergyBoost = context.energy === "low" && isSleepOrRecovery ? 4 : context.energy === "medium" && isSleepOrRecovery ? 1 : 0;
+    const sleepDebtBoost = context.sleepDebt && isSleepOrRecovery ? 5 : 0;
+    const stressBoost = context.stress === "high" && (isFocusOrMental || isSleepOrRecovery)
+      ? 3
+      : context.stress === "medium" && isFocusOrMental ? 1 : 0;
+    const focusDemandBoost = context.focusDemand === "high" && /focus/.test(category)
+      ? 3
+      : context.focusDemand === "medium" && /focus/.test(category) ? 1 : 0;
+    const recoveryModeBoost = context.recommendationMode === "recovery" && isSleepOrRecovery ? 2 : 0;
+
+    let leverageBoost = 0;
+
+    if (context.primaryLeverage === "sleep" && isSleepOrRecovery) {
+      leverageBoost = 3;
+    } else if (context.primaryLeverage === "stress" && (isFocusOrMental || isSleepOrRecovery)) {
+      leverageBoost = 3;
+    } else if (context.primaryLeverage === "focus" && /focus/.test(category)) {
+      leverageBoost = 3;
+    } else if (context.primaryLeverage === "recovery" && isSleepOrRecovery) {
+      leverageBoost = 2;
+    } else if (context.primaryLeverage === "consistency" && isConsistencyCategory) {
+      leverageBoost = 2;
+    }
 
     const priority = template.basePriority
       + recommendationWeight
-      + lowCapacityBoost
+      + lowEnergyBoost
+      + sleepDebtBoost
       + stressBoost
-      + workloadBoost
-      + recoveryBoost
+      + focusDemandBoost
+      + recoveryModeBoost
+      + leverageBoost
       - rankPenalty;
 
     const impact = Math.max(
@@ -251,13 +275,14 @@
         Math.round(
           template.baseImpact
           + recommendationWeight / 14
-          + (capacityScore <= 45 ? 1 : 0)
+          + (context.sleepDebt && isSleepOrRecovery ? 1 : 0)
+          + (context.stress === "high" && isFocusOrMental ? 1 : 0)
           - rankIndex * 1.5
           - templateIndex * 0.5
         )
       )
     );
-    const confidence = Math.max(0.55, Math.min(0.95, 0.62 + (priority - 60) / 200));
+    const confidence = Math.max(0.55, Math.min(0.95, context.confidence + (priority - 70) / 220));
     const rationale = RATIONALE_BY_RECOMMENDATION[recommendation.id] || template.rationale;
 
     return {
@@ -278,9 +303,7 @@
   function generateCandidateMissions(input) {
     const source = input && typeof input === "object" ? input : {};
     const recommendations = normalizeRecommendations(source.recommendations);
-    const capacity = source.capacity && typeof source.capacity === "object" ? source.capacity : {};
-    const capacityScore = getCapacityScore(capacity);
-    const factorImpactMap = getFactorImpactMap(capacity);
+    const context = normalizeContext(source.context);
 
     const candidates = [];
 
@@ -288,7 +311,7 @@
       const templates = resolveTemplateList(recommendation.id);
 
       templates.forEach(function (template, templateIndex) {
-        candidates.push(buildCandidate(template, recommendation, rankIndex, templateIndex, capacityScore, factorImpactMap));
+        candidates.push(buildCandidate(template, recommendation, rankIndex, templateIndex, context));
       });
     });
 
@@ -301,7 +324,7 @@
       };
 
       TEMPLATE_BANK.fallback.forEach(function (template, templateIndex) {
-        candidates.push(buildCandidate(template, fallbackRecommendation, 0, templateIndex, capacityScore, factorImpactMap));
+        candidates.push(buildCandidate(template, fallbackRecommendation, 0, templateIndex, context));
       });
     }
 
