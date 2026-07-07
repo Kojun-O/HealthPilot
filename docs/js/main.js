@@ -16,7 +16,7 @@ window.APP = APP;
 let currentMission = null;
 let dailyContextDraft = null;
 
-const MOCK_CAPACITY_CONTEXT = "Based on today's context";
+const MOCK_CAPACITY_CONTEXT = "Based on your latest data";
 const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
 const DAILY_CONTEXT_STORAGE_KEY = "healthPilot.dailyContext";
 const DAILY_CONTEXT_CATEGORIES = ["Physical", "Mental", "Work", "Family", "Other"];
