@@ -15,6 +15,31 @@ const APP = {
 window.APP = APP;
 let currentMission = null;
 let dailyContextDraft = null;
+const appState = {
+  rawHealthData: null,
+  capacity: null,
+  dailyContext: null,
+  context: null,
+  recommendations: [],
+  missionPlan: null,
+  missions: [],
+  prediction: null,
+  checkIn: null
+};
+
+const BASE_RAW_HEALTH_DATA = Object.freeze({
+  sleepScore: 42,
+  recoveryScore: 48,
+  activityScore: 38,
+  stressLevel: 72,
+  stressScore: 72,
+  workloadLevel: 68,
+  painLevel: 24,
+  energyLevel: 38,
+  focusLevel: 45,
+  bodyCondition: "肩が少し張っている",
+  note: "昨夜は寝付きが悪かった"
+});
 
 const MOCK_CAPACITY_CONTEXT = "Based on your latest data";
 const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
@@ -309,10 +334,11 @@ function renderMission(missions) {
       index === 0 ? "ゆっくり呼吸してリセット。" : "体を整える小さな一歩を実行する。"
     );
     const missionIcon = getMissionText(mission, "icon", index === 0 ? "◌" : index === 1 ? "▭" : "•");
-    const isCompleted = index < 2;
+    const missionId = getMissionText(mission, "id", `mission-${index + 1}`);
+    const isCompleted = isMissionCompleted(mission);
 
     return `
-      <li class="mission-item${isCompleted ? " is-complete" : ""}">
+      <li class="mission-item${isCompleted ? " is-complete" : ""}" data-mission-id="${escapeHtml(missionId)}">
         <span class="mission-icon-circle" aria-hidden="true">
           <span class="mission-icon-glyph" aria-hidden="true">${escapeHtml(missionIcon)}</span>
         </span>
@@ -327,7 +353,7 @@ function renderMission(missions) {
 
   missionList.innerHTML = missionItems;
 
-  const completedCount = Math.min(2, renderedMissions.length);
+  const completedCount = renderedMissions.filter((mission) => isMissionCompleted(mission)).length;
 
   if (counter) {
     counter.textContent = `${completedCount} / 3 完了`;
@@ -417,6 +443,7 @@ function handleCheckInSelection(event) {
   button.setAttribute("data-last-interaction", String(now));
   const updatedCheckIn = engine.saveTodayCheckIn({ [category]: rating });
   renderCheckIn(updatedCheckIn);
+  refreshMissionFromCheckIn(updatedCheckIn || {});
 }
 
 function bindCheckInEvents() {
@@ -670,23 +697,18 @@ function bindCapacityToggle() {
   toggle.dataset.bound = "true";
 }
 
-function startHealthPilot() {
-  const rawHealthData = {
-    sleepScore: 42,
-    recoveryScore: 48,
-    activityScore: 38,
-    stressLevel: 72,
-    stressScore: 72,
-    workloadLevel: 68,
-    painLevel: 24,
-    energyLevel: 38,
-    focusLevel: 45,
-    bodyCondition: "肩が少し張っている",
-    note: "昨夜は寝付きが悪かった"
+function buildDailyContextPayload(savedDailyContext) {
+  return {
+    timeOfDay: "morning",
+    weekday: new Date().getDay(),
+    recentCompletionRate: 67,
+    streakDays: 3,
+    category: savedDailyContext.category,
+    note: savedDailyContext.note
   };
+}
 
-  const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
-  const insight = DailyInsightEngine.generateDailyInsight(dailyCondition);
+function calculateCapacity(rawHealthData) {
   const capacityInput = {
     sleepScore: rawHealthData.sleepScore,
     recoveryScore: rawHealthData.recoveryScore,
@@ -695,29 +717,42 @@ function startHealthPilot() {
     workloadLevel: rawHealthData.workloadLevel,
     painLevel: rawHealthData.painLevel
   };
-  const capacity = window.CapacityCalculator && typeof window.CapacityCalculator.calculateCapacity === "function"
-    ? window.CapacityCalculator.calculateCapacity(capacityInput)
-    : {
-        capacity: 0,
-        status: "Recovery first",
-        factors: []
-      };
-  const savedDailyContext = loadDailyContext();
-  const dailyContext = {
-    timeOfDay: "morning",
-    weekday: new Date().getDay(),
-    recentCompletionRate: 67,
-    streakDays: 3,
-    category: savedDailyContext.category,
-    note: savedDailyContext.note
+
+  if (window.CapacityCalculator && typeof window.CapacityCalculator.calculateCapacity === "function") {
+    return window.CapacityCalculator.calculateCapacity(capacityInput);
+  }
+
+  return {
+    capacity: 0,
+    status: "Recovery first",
+    factors: []
   };
+}
+
+function calculateMissionOutputs(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const rawHealthData = source.rawHealthData && typeof source.rawHealthData === "object"
+    ? source.rawHealthData
+    : BASE_RAW_HEALTH_DATA;
+  const capacity = source.capacity && typeof source.capacity === "object"
+    ? source.capacity
+    : calculateCapacity(rawHealthData);
+  const dailyContext = source.dailyContext && typeof source.dailyContext === "object"
+    ? source.dailyContext
+    : buildDailyContextPayload(loadDailyContext());
+  const checkIn = source.checkIn && typeof source.checkIn === "object"
+    ? source.checkIn
+    : {};
+  const previousMissions = Array.isArray(source.previousMissions) ? source.previousMissions : [];
+
   const recommendations = window.RecommendationEngine && typeof window.RecommendationEngine.generateRecommendations === "function"
     ? window.RecommendationEngine.generateRecommendations(capacity, dailyContext)
     : [];
   const todayData = {
     ...rawHealthData,
     capacity,
-    dailyContext
+    dailyContext,
+    checkIn
   };
   const context = window.ContextEngine && typeof window.ContextEngine.buildContext === "function"
     ? window.ContextEngine.buildContext(todayData)
@@ -728,11 +763,31 @@ function startHealthPilot() {
         context
       })
     : null;
-  const missions = missionPlan && Array.isArray(missionPlan.topMissions) && missionPlan.topMissions.length
-    ? missionPlan.topMissions
-    : window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
+  const prioritizedCandidates = missionPlan && Array.isArray(missionPlan.prioritized)
+    ? missionPlan.prioritized
+    : [];
+  const completedMissionIds = previousMissions
+    .filter((mission) => isMissionCompleted(mission))
+    .map((mission) => mission && mission.id)
+    .filter((id) => typeof id === "string" && id.trim());
+
+  let missions = window.MissionEngine && typeof window.MissionEngine.reconcileMissionSelection === "function"
+    ? window.MissionEngine.reconcileMissionSelection({
+        previousMissions,
+        prioritizedCandidates,
+        completedMissionIds,
+        maxCount: 3
+      })
+    : missionPlan && Array.isArray(missionPlan.topMissions)
+      ? missionPlan.topMissions
+      : [];
+
+  if (!Array.isArray(missions) || !missions.length) {
+    missions = window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
       ? window.MissionBuilder.generateMissions(recommendations)
       : [];
+  }
+
   const missionCompletion = buildMissionCompletionProfile(missions);
   const prediction = window.PredictionEngine && typeof window.PredictionEngine.calculateTomorrowCapacity === "function"
     ? window.PredictionEngine.calculateTomorrowCapacity({
@@ -753,21 +808,147 @@ function startHealthPilot() {
   const whyMissionText = missionPlan && missionPlan.topMission && typeof missionPlan.topMission.rationale === "string"
     ? missionPlan.topMission.rationale
     : missionSummary;
+
+  return {
+    context,
+    recommendations,
+    missionPlan,
+    missions,
+    prediction,
+    missionSummary,
+    whyMissionText,
+    checkIn
+  };
+}
+
+function applyMissionOutputs(output) {
+  const nextOutput = output && typeof output === "object" ? output : {};
+  const missions = Array.isArray(nextOutput.missions) ? nextOutput.missions : [];
+  const missionSummary = typeof nextOutput.missionSummary === "string"
+    ? nextOutput.missionSummary
+    : "今日は回復を優先しましょう。\n\nまずは小さな一歩から始めましょう。";
+  const whyMissionText = typeof nextOutput.whyMissionText === "string"
+    ? nextOutput.whyMissionText
+    : "今日の状態に合わせた小さな一歩です。";
   const advice = missionSummary.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+
+  appState.context = nextOutput.context || null;
+  appState.recommendations = Array.isArray(nextOutput.recommendations) ? nextOutput.recommendations : [];
+  appState.missionPlan = nextOutput.missionPlan || null;
+  appState.missions = missions;
+  appState.prediction = nextOutput.prediction || null;
+  appState.checkIn = nextOutput.checkIn || appState.checkIn;
+
+  renderMission(missions);
+  renderAdvice(advice);
+  renderWhyMissions(whyMissionText);
+}
+
+function refreshMissionFromCheckIn(checkIn) {
+  const output = calculateMissionOutputs({
+    rawHealthData: appState.rawHealthData,
+    capacity: appState.capacity,
+    dailyContext: appState.dailyContext,
+    checkIn,
+    previousMissions: appState.missions
+  });
+
+  applyMissionOutputs(output);
+}
+
+function refreshMissionProjection() {
+  const missions = Array.isArray(appState.missions) ? appState.missions : [];
+  const missionCompletion = buildMissionCompletionProfile(missions);
+  const capacity = appState.capacity && typeof appState.capacity === "object" ? appState.capacity : {};
+  const prediction = window.PredictionEngine && typeof window.PredictionEngine.calculateTomorrowCapacity === "function"
+    ? window.PredictionEngine.calculateTomorrowCapacity({
+        currentCapacity: capacity.capacity,
+        missions,
+        missionCompletion
+      })
+    : {
+        currentCapacity: Number.isFinite(Number(capacity.capacity)) ? Number(capacity.capacity) : 0,
+        projectedCapacity: Number.isFinite(Number(capacity.capacity)) ? Number(capacity.capacity) : 0,
+        projectedDelta: 0
+      };
+  const missionSummary = window.MissionEngine && typeof window.MissionEngine.generateMissionSummary === "function"
+    ? window.MissionEngine.generateMissionSummary(missions, prediction)
+    : "今日は回復を優先しましょう。\n\nまずは小さな一歩から始めましょう。";
+  const missionPlan = appState.missionPlan && typeof appState.missionPlan === "object" ? appState.missionPlan : null;
+  const whyMissionText = missionPlan && missionPlan.topMission && typeof missionPlan.topMission.rationale === "string"
+    ? missionPlan.topMission.rationale
+    : missionSummary;
+
+  appState.prediction = prediction;
+  renderMission(missions);
+  renderAdvice(missionSummary.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>"));
+  renderWhyMissions(whyMissionText);
+}
+
+function bindMissionEvents() {
+  const missionList = document.getElementById("mission-list") || document.querySelector(".mission-list");
+
+  if (!missionList || missionList.dataset.bound === "true") {
+    return;
+  }
+
+  missionList.addEventListener("click", (event) => {
+    const item = event.target && typeof event.target.closest === "function"
+      ? event.target.closest(".mission-item")
+      : null;
+
+    if (!item) {
+      return;
+    }
+
+    const missionId = item.getAttribute("data-mission-id") || "";
+    const missions = Array.isArray(appState.missions) ? appState.missions : [];
+    const mission = missions.find((candidate) => String(candidate && candidate.id) === missionId);
+
+    if (!mission) {
+      return;
+    }
+
+    const completed = !isMissionCompleted(mission);
+    setMissionCompleted(mission, completed);
+    refreshMissionProjection();
+  });
+
+  missionList.dataset.bound = "true";
+}
+
+function startHealthPilot() {
+  const rawHealthData = { ...BASE_RAW_HEALTH_DATA };
+  const checkInEngine = window.CheckInEngine;
+  const todayCheckIn = checkInEngine && typeof checkInEngine.loadTodayCheckIn === "function"
+    ? checkInEngine.loadTodayCheckIn()
+    : {};
+  const dailyCondition = HealthDataAdapter.normalizeHealthData(rawHealthData);
+  const insight = DailyInsightEngine.generateDailyInsight(dailyCondition);
+  const capacity = calculateCapacity(rawHealthData);
+  const savedDailyContext = loadDailyContext();
+  const dailyContext = buildDailyContextPayload(savedDailyContext);
+  const missionOutput = calculateMissionOutputs({
+    rawHealthData,
+    capacity,
+    dailyContext,
+    checkIn: todayCheckIn,
+    previousMissions: []
+  });
+
+  appState.rawHealthData = rawHealthData;
+  appState.capacity = capacity;
+  appState.dailyContext = dailyContext;
+  appState.checkIn = todayCheckIn;
 
   renderTodaysCapacity(capacity);
   bindCapacityToggle();
   renderInsight(insight);
-  renderMission(missions);
-  renderAdvice(advice);
-  renderWhyMissions(whyMissionText);
+  applyMissionOutputs(missionOutput);
+  bindMissionEvents();
 
-  const checkInEngine = window.CheckInEngine;
-  if (checkInEngine && typeof checkInEngine.loadTodayCheckIn === "function") {
-    const todayCheckIn = checkInEngine.loadTodayCheckIn();
-    renderCheckIn(todayCheckIn);
-    bindCheckInEvents();
-  }
+  renderCheckIn(todayCheckIn);
+  bindCheckInEvents();
 
   renderDailyContext(savedDailyContext);
   bindDailyContextEvents();
@@ -775,11 +956,11 @@ function startHealthPilot() {
   console.log("Raw health data:", rawHealthData);
   console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
-  console.log("Recommendations:", recommendations);
-  console.log("Context:", context);
-  console.log("Mission plan:", missionPlan);
-  console.log("Missions:", missions);
-  console.log("Prediction:", prediction);
+  console.log("Recommendations:", missionOutput.recommendations);
+  console.log("Context:", missionOutput.context);
+  console.log("Mission plan:", missionOutput.missionPlan);
+  console.log("Missions:", missionOutput.missions);
+  console.log("Prediction:", missionOutput.prediction);
 }
 
 startHealthPilot();

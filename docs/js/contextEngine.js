@@ -67,6 +67,11 @@
     const capacityObject = source.capacity && typeof source.capacity === "object" ? source.capacity : {};
     const dailyContext = source.dailyContext && typeof source.dailyContext === "object" ? source.dailyContext : {};
     const checkIn = source.checkIn && typeof source.checkIn === "object" ? source.checkIn : {};
+    const checkInCondition = Number.isFinite(Number(checkIn.condition)) ? Math.round(Number(checkIn.condition)) : null;
+    const checkInSleep = Number.isFinite(Number(checkIn.sleep)) ? Math.round(Number(checkIn.sleep)) : null;
+    const checkInExercise = Number.isFinite(Number(checkIn.exercise)) ? Math.round(Number(checkIn.exercise)) : null;
+    const checkInMood = Number.isFinite(Number(checkIn.mood)) ? Math.round(Number(checkIn.mood)) : null;
+    const checkInStress = Number.isFinite(Number(checkIn.stress)) ? Math.round(Number(checkIn.stress)) : null;
 
     return {
       sleepScore: clampPercent(source.sleepScore, 60),
@@ -80,7 +85,11 @@
           clampPercent(capacityObject.score, 60)
         )
       ),
-      checkInStress: Number.isFinite(Number(checkIn.stress)) ? Math.round(Number(checkIn.stress)) : null,
+      checkInCondition,
+      checkInSleep,
+      checkInExercise,
+      checkInMood,
+      checkInStress,
       timeOfDay: normalizeTimeOfDay({
         timeOfDay: dailyContext.timeOfDay ?? source.timeOfDay,
         hour: source.hour
@@ -88,12 +97,35 @@
     };
   }
 
+  function average(values) {
+    const safeValues = Array.isArray(values)
+      ? values
+        .filter(function (value) { return Number.isFinite(Number(value)); })
+        .map(function (value) { return Number(value); })
+      : [];
+
+    if (!safeValues.length) {
+      return 0;
+    }
+
+    return safeValues.reduce(function (sum, value) {
+      return sum + value;
+    }, 0) / safeValues.length;
+  }
+
   function deriveRecoveryLevel(signals) {
-    if (signals.capacityScore <= 45 || signals.recoveryScore <= 45) {
+    const recoveryComposite = average([
+      signals.capacityScore,
+      signals.recoveryScore,
+      Number.isFinite(signals.checkInCondition) ? signals.checkInCondition * 20 : null,
+      Number.isFinite(signals.checkInSleep) ? signals.checkInSleep * 20 : null
+    ]);
+
+    if (recoveryComposite <= 45) {
       return "low";
     }
 
-    if (signals.capacityScore <= 65 || signals.recoveryScore <= 65) {
+    if (recoveryComposite <= 65) {
       return "medium";
     }
 
@@ -101,11 +133,17 @@
   }
 
   function deriveStressLevel(signals) {
-    if (signals.stressLevel >= 70 || signals.checkInStress >= 4) {
+    const stressComposite = Math.max(
+      signals.stressLevel,
+      Number.isFinite(signals.checkInStress) ? signals.checkInStress * 20 : 0,
+      Number.isFinite(signals.checkInMood) ? (5 - signals.checkInMood) * 20 : 0
+    );
+
+    if (stressComposite >= 70 || signals.checkInStress >= 4) {
       return "high";
     }
 
-    if (signals.stressLevel >= 50 || signals.checkInStress === 3) {
+    if (stressComposite >= 50 || signals.checkInStress === 3) {
       return "medium";
     }
 
@@ -113,7 +151,13 @@
   }
 
   function deriveEnergyLevel(signals) {
-    const combined = Math.round((signals.energyLevel + signals.capacityScore) / 2);
+    const combined = Math.round(average([
+      signals.energyLevel,
+      signals.capacityScore,
+      Number.isFinite(signals.checkInExercise) ? signals.checkInExercise * 20 : null,
+      Number.isFinite(signals.checkInCondition) ? signals.checkInCondition * 20 : null,
+      Number.isFinite(signals.checkInMood) ? signals.checkInMood * 20 : null
+    ]));
 
     if (combined <= 45) {
       return "low";

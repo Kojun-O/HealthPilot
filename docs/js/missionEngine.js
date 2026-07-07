@@ -13,6 +13,7 @@
   root.MissionEngine = engine;
 })(typeof window !== "undefined" ? window : globalThis, function () {
   const MAX_TOP_MISSIONS = 3;
+  const SIGNIFICANT_PRIORITY_DELTA = 8;
 
   const TEMPLATE_BANK = {
     protect_recovery: [
@@ -387,13 +388,111 @@
     };
   }
 
+  function normalizeMissionForReconcile(item) {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+
+    const id = typeof item.id === "string" ? item.id.trim() : "";
+
+    if (!id) {
+      return null;
+    }
+
+    const priority = Number(item.priority);
+
+    return {
+      ...item,
+      id,
+      priority: Number.isFinite(priority) ? Math.round(priority) : 0
+    };
+  }
+
+  function normalizeCompletedMissionIds(input) {
+    if (!Array.isArray(input)) {
+      return new Set();
+    }
+
+    return new Set(
+      input
+        .filter(function (id) { return typeof id === "string" && id.trim(); })
+        .map(function (id) { return id.trim(); })
+    );
+  }
+
+  function reconcileMissionSelection(input) {
+    const source = input && typeof input === "object" ? input : {};
+    const previousMissions = Array.isArray(source.previousMissions)
+      ? source.previousMissions.map(normalizeMissionForReconcile).filter(Boolean)
+      : [];
+    const prioritizedCandidates = Array.isArray(source.prioritizedCandidates)
+      ? source.prioritizedCandidates.map(normalizeMissionForReconcile).filter(Boolean)
+      : [];
+    const completedMissionIds = normalizeCompletedMissionIds(source.completedMissionIds);
+    const limit = Number.isFinite(Number(source.maxCount))
+      ? Math.max(1, Math.round(Number(source.maxCount)))
+      : MAX_TOP_MISSIONS;
+
+    if (!prioritizedCandidates.length) {
+      return previousMissions.slice(0, limit);
+    }
+
+    const topCandidate = prioritizedCandidates[0] || null;
+    const candidateById = new Map();
+
+    prioritizedCandidates.forEach(function (candidate) {
+      candidateById.set(candidate.id, candidate);
+    });
+
+    const selected = [];
+    const selectedIds = new Set();
+
+    previousMissions.forEach(function (previous, index) {
+      if (selected.length >= limit) {
+        return;
+      }
+
+      const nextCandidate = candidateById.get(previous.id);
+
+      if (!nextCandidate) {
+        return;
+      }
+
+      const priorityDelta = Math.abs(nextCandidate.priority - previous.priority);
+      const remainsOptimal = index === 0
+        && topCandidate
+        && topCandidate.id === previous.id;
+      const shouldPreserve = remainsOptimal
+        || completedMissionIds.has(previous.id)
+        || priorityDelta < SIGNIFICANT_PRIORITY_DELTA;
+
+      if (shouldPreserve && !selectedIds.has(nextCandidate.id)) {
+        selected.push(nextCandidate);
+        selectedIds.add(nextCandidate.id);
+      }
+    });
+
+    prioritizedCandidates.forEach(function (candidate) {
+      if (selected.length >= limit || selectedIds.has(candidate.id)) {
+        return;
+      }
+
+      selected.push(candidate);
+      selectedIds.add(candidate.id);
+    });
+
+    return selected.slice(0, limit);
+  }
+
   return {
     MAX_TOP_MISSIONS,
+    SIGNIFICANT_PRIORITY_DELTA,
     generateCandidateMissions,
     prioritizeCandidates,
     selectTopMissions,
     generateMissionSummary,
-    buildMissionPlan
+    buildMissionPlan,
+    reconcileMissionSelection
   };
 });
 

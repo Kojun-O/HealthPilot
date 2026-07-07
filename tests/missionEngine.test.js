@@ -61,3 +61,49 @@ test('generateMissionSummary reads projected delta from prediction input', () =>
 
   assert.match(summary, /Tomorrow \+5/);
 });
+
+test('reconcileMissionSelection preserves top mission when it remains optimal', () => {
+  const previousMissions = [
+    { id: 'mission_a', title: 'A', priority: 90, impact: 3 },
+    { id: 'mission_b', title: 'B', priority: 82, impact: 2 },
+    { id: 'mission_c', title: 'C', priority: 80, impact: 2 }
+  ];
+  const prioritizedCandidates = [
+    { id: 'mission_a', title: 'A', priority: 92, impact: 3 },
+    { id: 'mission_d', title: 'D', priority: 91, impact: 3 },
+    { id: 'mission_b', title: 'B', priority: 81, impact: 2 },
+    { id: 'mission_e', title: 'E', priority: 78, impact: 1 }
+  ];
+
+  const reconciled = MissionEngine.reconcileMissionSelection({
+    previousMissions,
+    prioritizedCandidates,
+    completedMissionIds: []
+  });
+
+  assert.equal(reconciled[0].id, 'mission_a');
+  assert.equal(reconciled.length, 3);
+});
+
+test('reconcileMissionSelection preserves completed missions when available', () => {
+  const previousMissions = [
+    { id: 'mission_a', title: 'A', priority: 90, impact: 3 },
+    { id: 'mission_b', title: 'B', priority: 83, impact: 2 },
+    { id: 'mission_c', title: 'C', priority: 81, impact: 2 }
+  ];
+  const prioritizedCandidates = [
+    { id: 'mission_d', title: 'D', priority: 95, impact: 4 },
+    { id: 'mission_a', title: 'A', priority: 84, impact: 3 },
+    { id: 'mission_b', title: 'B', priority: 72, impact: 1 },
+    { id: 'mission_c', title: 'C', priority: 70, impact: 1 }
+  ];
+
+  const reconciled = MissionEngine.reconcileMissionSelection({
+    previousMissions,
+    prioritizedCandidates,
+    completedMissionIds: ['mission_b']
+  });
+
+  assert.equal(reconciled.some((mission) => mission.id === 'mission_b'), true);
+  assert.equal(reconciled.length, 3);
+});
