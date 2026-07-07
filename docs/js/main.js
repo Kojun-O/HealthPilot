@@ -16,10 +16,11 @@ window.APP = APP;
 let currentMission = null;
 let dailyContextDraft = null;
 
-const MOCK_CAPACITY_CONTEXT = "Based on today's context";
-const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
+const MOCK_CAPACITY_CONTEXT = "Based on tomorrow's outlook";
+const MOCK_CAPACITY_THOUGHT = "Tomorrow Capacity reflects how the strongest current signals may shape your margin tomorrow.";
 const DAILY_CONTEXT_STORAGE_KEY = "healthPilot.dailyContext";
 const DAILY_CONTEXT_CATEGORIES = ["Physical", "Mental", "Work", "Family", "Other"];
+const MISSION_DESCRIPTION_MAX_LENGTH = 90;
 
 function renderAdvice(advice) {
   const insightCopy = document.querySelector(".mission-insight-copy");
@@ -167,6 +168,37 @@ function getMissionText(mission, field, fallback) {
   return fallback;
 }
 
+function toSingleSentence(value) {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const sentenceEndIndex = normalized.search(/[.!?。！？]/);
+
+  if (sentenceEndIndex >= 0) {
+    return normalized.slice(0, sentenceEndIndex + 1).trim();
+  }
+
+  return normalized;
+}
+
+function toConciseMissionDescription(value, fallback) {
+  const source = toSingleSentence(value) || toSingleSentence(fallback);
+
+  if (!source) {
+    return "Take one small step that supports your energy today.";
+  }
+
+  if (source.length <= MISSION_DESCRIPTION_MAX_LENGTH) {
+    return source;
+  }
+
+  const trimmed = source.slice(0, MISSION_DESCRIPTION_MAX_LENGTH).trim();
+  return `${trimmed}.`;
+}
+
 function getMissionMinutes(mission) {
   const value = mission && typeof mission === "object" ? mission.estimatedMinutes : undefined;
   const minutes = Number(value);
@@ -254,7 +286,10 @@ function renderMission(missions) {
 
   const missionItems = renderedMissions.map((mission, index) => {
     const title = getMissionText(mission, "title", "今日の一歩");
-    const subtitle = getMissionText(mission, "description", index === 0 ? "ゆっくり呼吸してリセット" : "体を整える小さな一歩");
+    const subtitle = toConciseMissionDescription(
+      getMissionText(mission, "description", ""),
+      index === 0 ? "ゆっくり呼吸してリセット。" : "体を整える小さな一歩を実行する。"
+    );
     const missionIcon = getMissionText(mission, "icon", index === 0 ? "◌" : index === 1 ? "▭" : "•");
     const isCompleted = index < 2;
 
@@ -505,15 +540,15 @@ function buildCapacityThought(capacity) {
   const negativeVerb = negativeNames.length === 1 ? "is" : "are";
 
   if (negativeNames.length && positiveNames.length) {
-    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin, even though ${formatCapacityFactorNames(positiveNames)} ${positiveVerb} helping.`;
+    return `Tomorrow Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your projected margin, even though ${formatCapacityFactorNames(positiveNames)} ${positiveVerb} helping.`;
   }
 
   if (negativeNames.length) {
-    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin.`;
+    return `Tomorrow Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your projected margin.`;
   }
 
   if (positiveNames.length) {
-    return `Today's Capacity is supported today by ${formatCapacityFactorNames(positiveNames)}.`;
+    return `Tomorrow Capacity is supported by ${formatCapacityFactorNames(positiveNames)}.`;
   }
 
   return typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()
