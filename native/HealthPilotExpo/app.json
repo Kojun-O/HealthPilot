@@ -25,6 +25,11 @@
     "plugins": [
       "expo-dev-client",
       "./plugins/withHealthKit"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cb1f0ab7-19f3-4fd5-afcd-2ff695ae4f0e"
+      }
+    }
   }
 }
