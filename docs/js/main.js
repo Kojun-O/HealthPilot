@@ -16,8 +16,8 @@ window.APP = APP;
 let currentMission = null;
 let dailyContextDraft = null;
 
-const MOCK_CAPACITY_CONTEXT = "Based on tomorrow's outlook";
-const MOCK_CAPACITY_THOUGHT = "Tomorrow Capacity reflects how the strongest current signals may shape your margin tomorrow.";
+const MOCK_CAPACITY_CONTEXT = "Based on today's context";
+const MOCK_CAPACITY_THOUGHT = "Today's Capacity reflects how today's strongest signals are shaping your available margin.";
 const DAILY_CONTEXT_STORAGE_KEY = "healthPilot.dailyContext";
 const DAILY_CONTEXT_CATEGORIES = ["Physical", "Mental", "Work", "Family", "Other"];
 const MISSION_DESCRIPTION_MAX_LENGTH = 90;
@@ -301,7 +301,7 @@ function renderMission(missions) {
         </span>
         <span class="mission-content">
           <span class="mission-label">${escapeHtml(title)}</span>
-          <span class="mission-subtitle">${escapeHtml(subtitle)} · ${escapeHtml(`Capacity +${impactValue}`)}</span>
+          <span class="mission-subtitle">${escapeHtml(subtitle)} · ${escapeHtml(`Tomorrow +${impactValue}`)}</span>
         </span>
         <span class="mission-status${isCompleted ? " mission-status-complete" : ""}" aria-hidden="true">${isCompleted ? "✓" : ""}</span>
       </li>
@@ -541,15 +541,15 @@ function buildCapacityThought(capacity) {
   const negativeVerb = negativeNames.length === 1 ? "is" : "are";
 
   if (negativeNames.length && positiveNames.length) {
-    return `Tomorrow Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your projected margin, even though ${formatCapacityFactorNames(positiveNames)} ${positiveVerb} helping.`;
+    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin, even though ${formatCapacityFactorNames(positiveNames)} ${positiveVerb} helping.`;
   }
 
   if (negativeNames.length) {
-    return `Tomorrow Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your projected margin.`;
+    return `Today's Capacity is lower because ${formatCapacityFactorNames(negativeNames)} ${negativeVerb} reducing your available margin.`;
   }
 
   if (positiveNames.length) {
-    return `Tomorrow Capacity is supported by ${formatCapacityFactorNames(positiveNames)}.`;
+    return `Today's Capacity is supported by ${formatCapacityFactorNames(positiveNames)}.`;
   }
 
   return typeof safeCapacity.thought === "string" && safeCapacity.thought.trim()

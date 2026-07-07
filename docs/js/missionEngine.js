@@ -339,7 +339,7 @@
       return "今日は回復を優先しましょう。\n\nまずは小さな一歩から始めましょう。";
     }
 
-    return `今日は「${top.title}」を優先しましょう。\n\nまずは今すぐ着手するとCapacity +${top.impact}が見込めます。`;
+    return `今日は「${top.title}」を優先しましょう。\n\nまずは今すぐ着手するとTomorrow +${top.impact}が見込めます。`;
   }
 
   function buildMissionPlan(input) {
