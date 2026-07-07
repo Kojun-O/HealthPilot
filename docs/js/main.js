@@ -286,8 +286,9 @@ function renderMission(missions) {
 
   const missionItems = renderedMissions.map((mission, index) => {
     const title = getMissionText(mission, "title", "今日の一歩");
+    const impactValue = Math.max(1, Math.round(Number(mission && mission.impact) || 0));
     const subtitle = toConciseMissionDescription(
-      getMissionText(mission, "description", ""),
+      getMissionText(mission, "conciseDescription", getMissionText(mission, "description", "")),
       index === 0 ? "ゆっくり呼吸してリセット。" : "体を整える小さな一歩を実行する。"
     );
     const missionIcon = getMissionText(mission, "icon", index === 0 ? "◌" : index === 1 ? "▭" : "•");
@@ -300,7 +301,7 @@ function renderMission(missions) {
         </span>
         <span class="mission-content">
           <span class="mission-label">${escapeHtml(title)}</span>
-          <span class="mission-subtitle">${escapeHtml(subtitle)}</span>
+          <span class="mission-subtitle">${escapeHtml(subtitle)} · ${escapeHtml(`Capacity +${impactValue}`)}</span>
         </span>
         <span class="mission-status${isCompleted ? " mission-status-complete" : ""}" aria-hidden="true">${isCompleted ? "✓" : ""}</span>
       </li>
@@ -696,12 +697,26 @@ function startHealthPilot() {
   const recommendations = window.RecommendationEngine && typeof window.RecommendationEngine.generateRecommendations === "function"
     ? window.RecommendationEngine.generateRecommendations(capacity, dailyContext)
     : [];
-  const missions = window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
-    ? window.MissionBuilder.generateMissions(recommendations)
-    : [];
-  const missionSummary = window.MissionBuilder && typeof window.MissionBuilder.generateMissionSummary === "function"
-    ? window.MissionBuilder.generateMissionSummary(missions)
-    : "今日は回復を優先しましょう。\n\nまずは「5分ストレッチ」から始めるのがおすすめです。";
+  const missionPlan = window.MissionEngine && typeof window.MissionEngine.buildMissionPlan === "function"
+    ? window.MissionEngine.buildMissionPlan({
+        recommendations,
+        capacity,
+        dailyContext
+      })
+    : null;
+  const missions = missionPlan && Array.isArray(missionPlan.topMissions) && missionPlan.topMissions.length
+    ? missionPlan.topMissions
+    : window.MissionBuilder && typeof window.MissionBuilder.generateMissions === "function"
+      ? window.MissionBuilder.generateMissions(recommendations)
+      : [];
+  const missionSummary = window.MissionEngine && typeof window.MissionEngine.generateMissionSummary === "function"
+    ? window.MissionEngine.generateMissionSummary(missions)
+    : window.MissionBuilder && typeof window.MissionBuilder.generateMissionSummary === "function"
+      ? window.MissionBuilder.generateMissionSummary(missions)
+      : "今日は回復を優先しましょう。\n\nまずは「5分ストレッチ」から始めるのがおすすめです。";
+  const whyMissionText = missionPlan && missionPlan.topMission && typeof missionPlan.topMission.rationale === "string"
+    ? missionPlan.topMission.rationale
+    : missionSummary;
   const advice = missionSummary.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
 
   renderTodaysCapacity(capacity);
@@ -709,7 +724,7 @@ function startHealthPilot() {
   renderInsight(insight);
   renderMission(missions);
   renderAdvice(advice);
-  renderWhyMissions(missionSummary);
+  renderWhyMissions(whyMissionText);
 
   const checkInEngine = window.CheckInEngine;
   if (checkInEngine && typeof checkInEngine.loadTodayCheckIn === "function") {
@@ -725,6 +740,7 @@ function startHealthPilot() {
   console.log("Daily insight:", insight);
   console.log("Normalized daily condition:", dailyCondition);
   console.log("Recommendations:", recommendations);
+  console.log("Mission plan:", missionPlan);
   console.log("Missions:", missions);
 }
 
