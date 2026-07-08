@@ -1,80 +1,53 @@
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import {
-  authorizeSleepRead,
-  isPermissionDeniedError,
-  readLastNightSleepDurationHours,
-} from './src/health/sleepDuration';
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { generateHealthPilotInsight } from "./src/ai/engine";
 
 export default function App() {
-  const [sleepState, setSleepState] = useState({
-    status: 'loading',
-    minutes: null,
-  });
+  const [insight, setInsight] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadSleep() {
-      try {
-        await authorizeSleepRead();
-        const hours = await readLastNightSleepDurationHours();
-        const minutes = Math.round(hours * 60);
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (minutes <= 0) {
-          setSleepState({ status: 'no-data', minutes: null });
-          return;
-        }
-
-        setSleepState({ status: 'ok', minutes });
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        if (isPermissionDeniedError(error)) {
-          setSleepState({ status: 'permission-required', minutes: null });
-          return;
-        }
-
-        setSleepState({ status: 'no-data', minutes: null });
-      }
+    async function loadInsight() {
+      const result = await generateHealthPilotInsight();
+      setInsight(result);
     }
 
-    loadSleep();
-
-    return () => {
-      isMounted = false;
-    };
+    loadInsight();
   }, []);
 
-  const sleepValue = useMemo(() => {
-    if (sleepState.status === 'loading') {
-      return 'Loading...';
-    }
-
-    if (sleepState.status === 'permission-required') {
-      return 'Permission required';
-    }
-
-    if (sleepState.status !== 'ok' || sleepState.minutes == null) {
-      return 'No sleep data';
-    }
-
-    const hoursPart = Math.floor(sleepState.minutes / 60);
-    const minutesPart = sleepState.minutes % 60;
-    return `${hoursPart}h ${minutesPart}m`;
-  }, [sleepState]);
+  if (!insight) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.logo}>Health Pilot</Text>
+        <Text style={styles.item}>Loading...</Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sleep</Text>
-      <Text style={styles.value}>{sleepValue}</Text>
+      <Text style={styles.logo}>Health Pilot</Text>
+
+      <Text style={styles.section}>Today's Capacity</Text>
+      <Text style={styles.capacity}>{insight.todayCapacity}</Text>
+
+      <Text style={styles.section}>Tomorrow</Text>
+      <Text style={styles.tomorrow}>
+        {insight.tomorrowCapacity.baseline} →{" "}
+        {insight.tomorrowCapacity.withMissions} (+{insight.tomorrowCapacity.delta})
+      </Text>
+
+      <Text style={styles.section}>Mission</Text>
+      {insight.missions.map((mission, index) => (
+        <Text key={index} style={styles.item}>
+          □ {mission.title}
+        </Text>
+      ))}
+
+      <Text style={styles.section}>Discovery</Text>
+      <Text style={styles.item}>🧪 {insight.discovery.title}</Text>
+
       <StatusBar style="auto" />
     </View>
   );
@@ -83,19 +56,30 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: "#ffffff",
+    padding: 32,
+    justifyContent: "center",
   },
-  title: {
+  logo: {
+    fontSize: 32,
+    fontWeight: "700",
+    marginBottom: 36,
+  },
+  section: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 18,
+  },
+  capacity: {
+    fontSize: 52,
+    fontWeight: "700",
+  },
+  tomorrow: {
     fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 10,
-    textAlign: 'center',
+    fontWeight: "600",
   },
-  value: {
-    fontSize: 20,
-    textAlign: 'center',
+  item: {
+    fontSize: 18,
+    marginTop: 8,
   },
 });
