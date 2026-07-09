@@ -1,18 +1,23 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
 
 export default function App() {
   const [insight, setInsight] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadInsight = useCallback(async () => {
+    const { input } = await buildAiInput();
+    return generateHealthPilotInsight(input);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadInsight() {
-      const { input } = await buildAiInput();
-      const result = await generateHealthPilotInsight(input);
+    async function loadInitialInsight() {
+      const result = await loadInsight();
 
       if (cancelled) {
         return;
@@ -21,18 +26,29 @@ export default function App() {
       setInsight(result);
     }
 
-    loadInsight();
+    loadInitialInsight();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadInsight]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      const result = await loadInsight();
+      setInsight(result);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadInsight]);
 
   if (!insight) {
     return (
       <View style={styles.container}>
         <Text style={styles.logo}>Health Pilot</Text>
-        <Text style={styles.item}>Loading...</Text>
+        <Text style={styles.loading}>Loading...</Text>
         <StatusBar style="auto" />
       </View>
     );
@@ -43,7 +59,11 @@ export default function App() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
+        alwaysBounceVertical={true}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         <Text style={styles.logo}>Health Pilot</Text>
 
@@ -102,10 +122,15 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 28,
     fontWeight: "700",
-    marginBottom: 20,
+    marginBottom: 12,
   },
   missionSection: {
+    marginTop: 0,
     marginBottom: 26,
+  },
+  loading: {
+    fontSize: 18,
+    color: "#333",
   },
   section: {
     fontSize: 14,
