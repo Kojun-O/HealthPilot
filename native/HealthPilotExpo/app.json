@@ -20,14 +20,22 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.healthpilot.xnative"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-dev-client",
-      "./plugins/withHealthKit"
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Health Pilot reads sleep, resting heart rate, heart rate variability, steps, and weight to recommend one clear daily action.",
+          "NSHealthUpdateUsageDescription": "Health Pilot does not write health data in this version.",
+          "background": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

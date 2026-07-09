@@ -1,12 +1,14 @@
+import { loadAppleHealthSnapshot } from "../health/appleHealth";
+
 export const mockAiInput = {
   date: "2026-07-08",
 
   health: {
-    sleepHours: 6.4,
-    hrv: 42,
-    restingHeartRate: 58,
-    steps: 4380,
-    workoutMinutes: 0,
+    sleepHours: null,
+    hrv: null,
+    restingHeartRate: null,
+    steps: null,
+    weight: null,
   },
 
   checkIn: {
@@ -29,3 +31,16 @@ export const mockAiInput = {
     ],
   },
 };
+
+export async function buildAiInput() {
+  const healthSnapshot = await loadAppleHealthSnapshot();
+
+  return {
+    input: {
+      ...mockAiInput,
+      date: new Date().toISOString().slice(0, 10),
+      health: healthSnapshot.health,
+    },
+    healthSnapshot,
+  };
+}

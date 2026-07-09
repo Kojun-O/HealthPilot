@@ -1,18 +1,19 @@
-# Health Pilot Native (Expo) - Sprint 29
+# Health Pilot Native (Expo) - Apple Health MVP
 
 Scope:
 - Keep web prototype intact under `docs/`
 - Enable Expo development build path (not Expo Go)
-- Prepare HealthKit for first metric: sleep duration
+- Read the five Apple Health metrics used by the AI input layer
 
 ## What is already prepared
 
 - Expo app scaffold in this folder
 - `expo-dev-client` added so iOS testing uses a development build
-- `react-native-health` added for HealthKit bridge APIs
+- `@kingstinct/react-native-healthkit` added for HealthKit bridge APIs
+- `react-native-nitro-modules` added for Nitro-based native bindings
 - `eas.json` added with a `development` profile
-- Custom Expo config plugin at `plugins/withHealthKit.js` to set HealthKit entitlement and iOS usage descriptions
-- Sleep reader helper at `src/health/sleepDuration.js`
+- Expo config plugin from `@kingstinct/react-native-healthkit` sets the HealthKit entitlement and iOS usage descriptions
+- Apple Health adapter at `src/health/appleHealth.js`
 
 ## Required local commands (Mac)
 
@@ -36,5 +37,5 @@ npx expo start --dev-client
 ## Notes
 
 - HealthKit access requires an iOS development build. Expo Go cannot load HealthKit native modules.
-- The first implementation target is read-only sleep duration.
+- The app requests read-only HealthKit access for sleep, resting heart rate, heart rate variability, steps, and weight.
 - This sprint intentionally avoids broader UI or architecture changes.
