@@ -18,6 +18,7 @@
     "web": "expo start --web",
     "prebuild": "expo prebuild",
     "ios:dev": "eas build --platform ios --profile development",
+    "ios:preview": "eas build --platform ios --profile preview",
     "ios:run": "expo run:ios"
   },
   "private": true
