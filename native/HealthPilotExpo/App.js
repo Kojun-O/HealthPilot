@@ -1,12 +1,21 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
 
 export default function App() {
   const [insight, setInsight] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [completedMissions, setCompletedMissions] = useState({});
+
+  const formatLocalTime = useCallback((date) => {
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${hours}:${minutes}`;
+  }, []);
 
   const loadInsight = useCallback(async () => {
     const { input } = await buildAiInput();
@@ -24,6 +33,7 @@ export default function App() {
       }
 
       setInsight(result);
+      setLastUpdatedAt(new Date());
     }
 
     loadInitialInsight();
@@ -40,9 +50,17 @@ export default function App() {
       const result = await loadInsight();
       setInsight(result);
     } finally {
+      setLastUpdatedAt(new Date());
       setRefreshing(false);
     }
   }, [loadInsight]);
+
+  const handleMissionToggle = useCallback((missionIndex) => {
+    setCompletedMissions((prev) => ({
+      ...prev,
+      [missionIndex]: !prev[missionIndex],
+    }));
+  }, []);
 
   if (!insight) {
     return (
@@ -71,9 +89,17 @@ export default function App() {
           <Text style={styles.section}>Mission</Text>
           <Text style={styles.missionSubtitle}>One clear focus for today</Text>
           {insight.missions.map((mission, index) => (
-            <Text key={index} style={styles.missionItem}>
-              □ {mission.title}
-            </Text>
+            <Pressable
+              key={index}
+              onPress={() => handleMissionToggle(index)}
+              accessibilityRole="button"
+              accessibilityState={{ checked: Boolean(completedMissions[index]) }}
+              style={styles.missionRow}
+            >
+              <Text style={styles.missionItem}>
+                {completedMissions[index] ? "☑" : "☐"} {mission.title}
+              </Text>
+            </Pressable>
           ))}
         </View>
 
@@ -94,6 +120,10 @@ export default function App() {
             </Text>
           ) : null}
         </View>
+
+        {lastUpdatedAt ? (
+          <Text style={styles.lastUpdated}>Last updated {formatLocalTime(lastUpdatedAt)}</Text>
+        ) : null}
 
         <View style={styles.discoverySection}>
           <Text style={styles.discoveryLabel}>Discovery</Text>
@@ -145,11 +175,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#111",
   },
+  missionRow: {
+    marginTop: 8,
+  },
   missionItem: {
     fontSize: 22,
     lineHeight: 30,
     fontWeight: "600",
-    marginTop: 8,
     color: "#111",
   },
   compactCard: {
@@ -174,6 +206,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: "#666",
+  },
+  lastUpdated: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: -2,
+    marginBottom: 12,
+    paddingHorizontal: 2,
   },
   discoverySection: {
     marginTop: 4,
