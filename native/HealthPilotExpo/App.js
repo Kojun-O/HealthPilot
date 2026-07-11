@@ -102,7 +102,6 @@ export default function App() {
 
         <View style={styles.missionSection}>
           <Text style={styles.section}>Mission</Text>
-          <Text style={styles.missionSubtitle}>One clear focus for today</Text>
           {insight.missions.map((mission, index) => (
             <Pressable
               key={index}
@@ -123,7 +122,8 @@ export default function App() {
           <Text style={styles.capacity}>{insight.todayCapacity}</Text>
         </View>
 
-        <View style={styles.checkInSection}>
+        <View style={styles.compactCard}>
+          <View style={styles.checkInSection}>
           <Text style={styles.section}>今日のチェックイン</Text>
           {CHECK_IN_ITEMS.map((item) => {
             const currentValue = checkInRatings[item.key];
@@ -158,6 +158,7 @@ export default function App() {
               </View>
             );
           })}
+          </View>
         </View>
 
         <View style={styles.compactCard}>
@@ -171,11 +172,10 @@ export default function App() {
               {insight.tomorrowCapacity.reason}
             </Text>
           ) : null}
+          {lastUpdatedAt ? (
+            <Text style={styles.lastUpdated}>Updated {formatLocalTime(lastUpdatedAt)}</Text>
+          ) : null}
         </View>
-
-        {lastUpdatedAt ? (
-          <Text style={styles.lastUpdated}>Last updated {formatLocalTime(lastUpdatedAt)}</Text>
-        ) : null}
 
         <View style={styles.discoverySection}>
           <Text style={styles.discoveryLabel}>Discovery</Text>
@@ -221,12 +221,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 0.2,
   },
-  missionSubtitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 10,
-    color: "#111",
-  },
   missionRow: {
     marginTop: 8,
   },
@@ -251,8 +245,8 @@ const styles = StyleSheet.create({
   },
   checkInSection: {
     marginTop: 0,
-    marginBottom: 14,
-    paddingHorizontal: 4,
+    marginBottom: 0,
+    paddingHorizontal: 0,
   },
   checkInRow: {
     minHeight: 34,
@@ -304,11 +298,9 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   lastUpdated: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: -2,
-    marginBottom: 12,
-    paddingHorizontal: 2,
+    fontSize: 11,
+    color: "#9a9a9a",
+    marginTop: 8,
   },
   discoverySection: {
     marginTop: 4,
