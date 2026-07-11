@@ -137,9 +137,29 @@ export default function App() {
           ))}
         </View>
 
+        <View style={styles.discoverySection}>
+          <Text style={styles.discoveryLabel}>Discovery</Text>
+          <Text style={styles.discoveryItem}>🧪 {insight.discovery.title}</Text>
+        </View>
+
         <View style={styles.compactCard}>
           <Text style={styles.section}>Today's Capacity</Text>
           <Text style={styles.capacity}>{insight.todayCapacity}</Text>
+        </View>
+
+        <View style={styles.compactCard}>
+          <Text style={styles.section}>Tomorrow</Text>
+          <Text style={styles.tomorrowValue}>
+            {baselineTomorrow} → {projectedTomorrow} (+{completedImpact})
+          </Text>
+          {insight.tomorrowCapacity.reason ? (
+            <Text numberOfLines={1} style={styles.tomorrowReason}>
+              {insight.tomorrowCapacity.reason}
+            </Text>
+          ) : null}
+          {lastUpdatedAt ? (
+            <Text style={styles.lastUpdated}>Updated {formatLocalTime(lastUpdatedAt)}</Text>
+          ) : null}
         </View>
 
         <View style={styles.compactCard}>
@@ -179,26 +199,6 @@ export default function App() {
             );
           })}
           </View>
-        </View>
-
-        <View style={styles.compactCard}>
-          <Text style={styles.section}>Tomorrow</Text>
-          <Text style={styles.tomorrowValue}>
-            {baselineTomorrow} → {projectedTomorrow} (+{completedImpact})
-          </Text>
-          {insight.tomorrowCapacity.reason ? (
-            <Text numberOfLines={1} style={styles.tomorrowReason}>
-              {insight.tomorrowCapacity.reason}
-            </Text>
-          ) : null}
-          {lastUpdatedAt ? (
-            <Text style={styles.lastUpdated}>Updated {formatLocalTime(lastUpdatedAt)}</Text>
-          ) : null}
-        </View>
-
-        <View style={styles.discoverySection}>
-          <Text style={styles.discoveryLabel}>Discovery</Text>
-          <Text style={styles.discoveryItem}>🧪 {insight.discovery.title}</Text>
         </View>
       </ScrollView>
 
