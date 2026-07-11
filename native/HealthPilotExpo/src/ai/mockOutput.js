@@ -6,7 +6,7 @@ export const mockAiOutput = {
     delta: 7,
     confidence: "Medium",
     reason:
-      "Sleep duration is slightly short, but light activity and earlier sleep may improve tomorrow's recovery and focus.",
+      "睡眠時間はやや短めです。軽い運動と早めの就寝で、明日の回復と集中力の改善が期待できます。",
   },
   missions: [
     {
