@@ -87,6 +87,26 @@ export default function App() {
     );
   }
 
+  const baselineTomorrow =
+    typeof insight.tomorrowCapacity.baseline === "number" && Number.isFinite(insight.tomorrowCapacity.baseline)
+      ? insight.tomorrowCapacity.baseline
+      : 0;
+
+  const completedImpact = insight.missions.reduce((sum, mission, index) => {
+    if (!completedMissions[index]) {
+      return sum;
+    }
+
+    const impact =
+      typeof mission.expectedImpact === "number" && Number.isFinite(mission.expectedImpact)
+        ? mission.expectedImpact
+        : 0;
+
+    return sum + impact;
+  }, 0);
+
+  const projectedTomorrow = Math.min(100, baselineTomorrow + completedImpact);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -164,8 +184,7 @@ export default function App() {
         <View style={styles.compactCard}>
           <Text style={styles.section}>Tomorrow</Text>
           <Text style={styles.tomorrowValue}>
-            {insight.tomorrowCapacity.baseline} →{" "}
-            {insight.tomorrowCapacity.withMissions} (+{insight.tomorrowCapacity.delta})
+            {baselineTomorrow} → {projectedTomorrow} (+{completedImpact})
           </Text>
           {insight.tomorrowCapacity.reason ? (
             <Text numberOfLines={1} style={styles.tomorrowReason}>
