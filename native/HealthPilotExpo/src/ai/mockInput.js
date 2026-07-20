@@ -1,11 +1,16 @@
 import { loadHealthData } from "../health/healthDataRepository";
+import { generateInsights } from "./insights/generateInsights";
 import { normalizeHealthData } from "./normalizeHealthData";
 
 export const mockAiInput = {
   date: "2026-07-08",
 
   health: {
-    sleepHours: null,
+    mainSleep: {
+      startAt: "2026-07-19T13:30:00.000Z",
+      endAt: "2026-07-19T20:00:00.000Z",
+      durationMinutes: 390,
+    },
     hrv: null,
     restingHeartRate: null,
     steps: null,
@@ -36,6 +41,7 @@ export const mockAiInput = {
 export async function buildAiInput() {
   const healthSnapshot = await loadHealthData();
   const normalizedHealthData = normalizeHealthData(healthSnapshot.health);
+  const insights = generateInsights(normalizedHealthData);
 
   return {
     input: {
@@ -43,6 +49,7 @@ export async function buildAiInput() {
       date: new Date().toISOString().slice(0, 10),
       health: healthSnapshot.health,
       normalizedHealthData,
+      insights,
     },
     healthSnapshot,
   };

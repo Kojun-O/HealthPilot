@@ -7,9 +7,10 @@ import {
   queryStatisticsForQuantity,
   requestAuthorization,
 } from "@kingstinct/react-native-healthkit";
+import { pickMainSleep } from "./mainSleep";
 
 const EMPTY_HEALTH = Object.freeze({
-  sleepHours: null,
+  mainSleep: null,
   restingHeartRate: null,
   hrv: null,
   steps: null,
@@ -17,8 +18,6 @@ const EMPTY_HEALTH = Object.freeze({
 });
 
 const LAST_NIGHT_LOOKBACK_HOURS = 36;
-const SLEEP_SESSION_MIN_HOURS = 3;
-const SLEEP_SESSION_GAP_MS = 90 * 60 * 1000;
 
 const READ_PERMISSIONS = {
   toRead: [
@@ -98,57 +97,7 @@ function isAsleepValue(value) {
   );
 }
 
-function mergeIntervals(intervals) {
-  const sorted = [...intervals].sort((left, right) => left.start - right.start);
-  const merged = [];
-
-  for (const interval of sorted) {
-    const previous = merged[merged.length - 1];
-
-    if (!previous) {
-      merged.push({ ...interval });
-      continue;
-    }
-
-    if (interval.start <= previous.end) {
-      previous.end = new Date(Math.max(previous.end.getTime(), interval.end.getTime()));
-      continue;
-    }
-
-    merged.push({ ...interval });
-  }
-
-  return merged;
-}
-
-function collapseSleepSessions(intervals) {
-  const merged = mergeIntervals(intervals);
-  const sessions = [];
-
-  for (const interval of merged) {
-    const previous = sessions[sessions.length - 1];
-
-    if (!previous) {
-      sessions.push({ ...interval });
-      continue;
-    }
-
-    if (interval.start.getTime() - previous.end.getTime() <= SLEEP_SESSION_GAP_MS) {
-      previous.end = interval.end;
-      continue;
-    }
-
-    sessions.push({ ...interval });
-  }
-
-  return sessions;
-}
-
-function getDurationHours(interval) {
-  return (interval.end.getTime() - interval.start.getTime()) / (60 * 60 * 1000);
-}
-
-function pickLastNightSleepHours(samples) {
+function pickMainSleepFromSamples(samples) {
   const asleepIntervals = samples
     .filter((sample) => isAsleepValue(sample.value))
     .map((sample) => ({
@@ -157,18 +106,7 @@ function pickLastNightSleepHours(samples) {
     }))
     .filter((interval) => interval.start && interval.end && interval.end > interval.start);
 
-  if (asleepIntervals.length === 0) {
-    return null;
-  }
-
-  const sessions = collapseSleepSessions(asleepIntervals);
-  const qualifyingSessions = sessions.filter(
-    (session) => getDurationHours(session) >= SLEEP_SESSION_MIN_HOURS,
-  );
-  const candidates = qualifyingSessions.length > 0 ? qualifyingSessions : sessions;
-  const lastSession = candidates[candidates.length - 1];
-
-  return round(getDurationHours(lastSession), 1);
+  return pickMainSleep(asleepIntervals);
 }
 
 async function authorizeHealthKit() {
@@ -210,7 +148,7 @@ async function readMetric(reader) {
   }
 }
 
-async function readSleepHours() {
+async function readMainSleep() {
   const { startDate, endDate } = createSleepWindow();
   const samples = await queryCategorySamples("HKCategoryTypeIdentifierSleepAnalysis", {
     limit: -1,
@@ -225,7 +163,7 @@ async function readSleepHours() {
     },
   });
 
-  return pickLastNightSleepHours(samples);
+  return pickMainSleepFromSamples(samples);
 }
 
 async function readRestingHeartRate() {
@@ -317,21 +255,21 @@ export async function loadAppleHealthSnapshot() {
     };
   }
 
-  const [sleepHours, restingHeartRate, hrv, steps, weight] = await Promise.all([
-    readMetric(readSleepHours),
+  const [mainSleep, restingHeartRate, hrv, steps, weight] = await Promise.all([
+    readMetric(readMainSleep),
     readMetric(readRestingHeartRate),
     readMetric(readHeartRateVariability),
     readMetric(readTodayStepCount),
     readMetric(readLatestWeight),
   ]);
 
-  health.sleepHours = sleepHours.value;
+  health.mainSleep = mainSleep.value;
   health.restingHeartRate = restingHeartRate.value;
   health.hrv = hrv.value;
   health.steps = steps.value;
   health.weight = weight.value;
 
-  const results = [sleepHours, restingHeartRate, hrv, steps, weight];
+  const results = [mainSleep, restingHeartRate, hrv, steps, weight];
   const denied = results.some((result) => result.denied);
   const failed = results.some((result) => result.failed);
   const anyValue = Object.values(health).some((value) => value !== null);
