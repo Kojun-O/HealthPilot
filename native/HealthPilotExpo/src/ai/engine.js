@@ -1,5 +1,6 @@
 import { buildHealthPilotPrompt } from "./prompt";
 import { buildAiInput } from "./mockInput";
+import { generateBriefing } from "./generateBriefing";
 import { mockAiOutput } from "./mockOutput";
 import { callOpenAiForInsight } from "./openaiClient";
 
@@ -16,5 +17,8 @@ export async function generateHealthPilotInsight(input) {
     return callOpenAiForInsight(prompt);
   }
 
-  return mockAiOutput;
+  return {
+    ...mockAiOutput,
+    aiBriefing: generateBriefing(resolvedInput.normalizedHealthData),
+  };
 }

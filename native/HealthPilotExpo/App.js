@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
-import { mockAiOutput } from "./src/ai/mockOutput";
 import { AIBriefingCard } from "./src/components/AIBriefingCard";
 
 const CHECK_IN_ITEMS = [
@@ -130,7 +129,7 @@ export default function App() {
       >
         <Text style={styles.logo}>Health Pilot</Text>
 
-        <AIBriefingCard title={mockAiOutput.aiBriefing.title} body={mockAiOutput.aiBriefing.body} />
+        <AIBriefingCard title={insight.aiBriefing.title} message={insight.aiBriefing.message} />
 
         <View style={styles.missionSection}>
           <Text style={styles.section}>Mission</Text>

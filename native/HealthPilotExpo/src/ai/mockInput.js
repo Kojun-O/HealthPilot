@@ -1,4 +1,5 @@
 import { loadAppleHealthSnapshot } from "../health/appleHealth";
+import { normalizeHealthData } from "./normalizeHealthData";
 
 export const mockAiInput = {
   date: "2026-07-08",
@@ -34,12 +35,14 @@ export const mockAiInput = {
 
 export async function buildAiInput() {
   const healthSnapshot = await loadAppleHealthSnapshot();
+  const normalizedHealthData = normalizeHealthData(healthSnapshot.health);
 
   return {
     input: {
       ...mockAiInput,
       date: new Date().toISOString().slice(0, 10),
       health: healthSnapshot.health,
+      normalizedHealthData,
     },
     healthSnapshot,
   };

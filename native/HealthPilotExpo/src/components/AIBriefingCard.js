@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 
-export function AIBriefingCard({ title, body }) {
+export function AIBriefingCard({ title, message }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.body}>{body}</Text>
+      <Text style={styles.body}>{message}</Text>
     </View>
   );
 }
