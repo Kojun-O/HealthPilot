@@ -80,7 +80,7 @@ export default function App() {
   const handleChallengeMissionInfoPress = useCallback(() => {
     Alert.alert(
       "Challenge Mission",
-      "明日のコンディションをさらに改善するための、AIからの追加提案です。",
+      "明日のコンディションをさらに改善し、\n毎日の生活を少し豊かにするためのAIからの提案です。",
       [{ text: "OK" }]
     );
   }, []);
@@ -157,7 +157,17 @@ export default function App() {
               <Text style={styles.infoIcon}>ⓘ</Text>
             </Pressable>
           </View>
-          <Text style={styles.discoveryItem}>🧪 {insight.discovery.title}</Text>
+          <Text style={styles.discoverySubtitle}>今日はどれか一つ試してみませんか？</Text>
+          <Text style={styles.discoveryItem}>🌱 {insight.discovery.title}</Text>
+          <Text style={styles.discoveryBenefitLabel}>期待できること</Text>
+          <Text style={styles.discoveryBenefitValue}>午後の集中力アップ</Text>
+        </View>
+
+        <View style={styles.compactCard}>
+          <Text style={styles.section}>{insight.reflection.title}</Text>
+          <Text numberOfLines={3} style={styles.reflectionSummary}>
+            {insight.reflection.summary}
+          </Text>
         </View>
 
         <View style={styles.compactCard}>
@@ -361,9 +371,12 @@ const styles = StyleSheet.create({
   },
   discoverySection: {
     marginTop: 0,
-    marginBottom: 18,
-    paddingHorizontal: 4,
-    paddingVertical: 0,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#ececec",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   discoveryLabel: {
     fontSize: 13,
@@ -373,7 +386,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   infoButton: {
     paddingHorizontal: 4,
@@ -384,7 +397,32 @@ const styles = StyleSheet.create({
     color: "#888",
   },
   discoveryItem: {
-    fontSize: 15,
+    marginTop: 8,
+    fontSize: 18,
+    lineHeight: 26,
+    color: "#111",
+    fontWeight: "600",
+  },
+  discoverySubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#666",
+  },
+  discoveryBenefitLabel: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#777",
+    letterSpacing: 0.2,
+  },
+  discoveryBenefitValue: {
+    marginTop: 2,
+    fontSize: 14,
     color: "#333",
+  },
+  reflectionSummary: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
   },
 });
