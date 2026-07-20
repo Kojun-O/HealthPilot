@@ -1,4 +1,4 @@
-import { loadAppleHealthSnapshot } from "../health/appleHealth";
+import { loadHealthData } from "../health/healthDataRepository";
 import { normalizeHealthData } from "./normalizeHealthData";
 
 export const mockAiInput = {
@@ -34,7 +34,7 @@ export const mockAiInput = {
 };
 
 export async function buildAiInput() {
-  const healthSnapshot = await loadAppleHealthSnapshot();
+  const healthSnapshot = await loadHealthData();
   const normalizedHealthData = normalizeHealthData(healthSnapshot.health);
 
   return {
