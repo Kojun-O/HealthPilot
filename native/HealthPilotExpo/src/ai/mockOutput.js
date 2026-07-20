@@ -1,4 +1,8 @@
 export const mockAiOutput = {
+  aiBriefing: {
+    title: "Good morning",
+    body: "今日は昨日より少し回復しています。\n\nまずはこの3つだけ意識しましょう。",
+  },
   todayCapacity: 72,
   tomorrowCapacity: {
     baseline: 67,
