@@ -5,8 +5,16 @@ const SHORT_MAIN_SLEEP_CANDIDATE = Object.freeze({
   rationale: "昨夜の主睡眠が7時間未満だったため",
 });
 
+const LOW_ACTIVITY_CANDIDATE = Object.freeze({
+  id: "low-activity-walk",
+  type: "activity",
+  title: "今日は15分だけ外を歩く",
+  rationale: "歩数が少なく、活動量が不足しています。",
+});
+
 const MISSION_CANDIDATES_BY_INSIGHT_TYPE = Object.freeze({
   short_main_sleep: SHORT_MAIN_SLEEP_CANDIDATE,
+  low_activity: LOW_ACTIVITY_CANDIDATE,
 });
 
 function getInsightId(insight) {

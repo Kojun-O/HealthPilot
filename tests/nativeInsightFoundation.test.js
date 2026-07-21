@@ -56,6 +56,112 @@ test("generateInsights returns short_main_sleep with moderate severity at 390 mi
   ]);
 });
 
+test("generateInsights returns low_activity at 4999 steps with moderate severity", async () => {
+  const { generateInsights } = await loadModules();
+
+  const insights = generateInsights({
+    activity: {
+      steps: 4999,
+    },
+  });
+
+  assert.deepEqual(insights, [
+    {
+      id: "low_activity",
+      type: "low_activity",
+      severity: "moderate",
+      evidence: {
+        stepCount: 4999,
+        thresholdSteps: 5000,
+      },
+    },
+  ]);
+});
+
+test("generateInsights does not return low_activity at exactly 5000 steps", async () => {
+  const { generateInsights } = await loadModules();
+
+  const insights = generateInsights({
+    activity: {
+      steps: 5000,
+    },
+  });
+
+  assert.deepEqual(insights, []);
+});
+
+test("generateInsights returns low_activity for 0 steps", async () => {
+  const { generateInsights } = await loadModules();
+
+  const insights = generateInsights({
+    activity: {
+      steps: 0,
+    },
+  });
+
+  assert.deepEqual(insights, [
+    {
+      id: "low_activity",
+      type: "low_activity",
+      severity: "moderate",
+      evidence: {
+        stepCount: 0,
+        thresholdSteps: 5000,
+      },
+    },
+  ]);
+});
+
+test("generateInsights does not return low_activity for null or undefined steps", async () => {
+  const { generateInsights } = await loadModules();
+
+  assert.deepEqual(
+    generateInsights({
+      activity: {
+        steps: null,
+      },
+    }),
+    [],
+  );
+  assert.deepEqual(
+    generateInsights({
+      activity: {
+        steps: undefined,
+      },
+    }),
+    [],
+  );
+});
+
+test("generateInsights does not return low_activity for invalid step values", async () => {
+  const { generateInsights } = await loadModules();
+
+  assert.deepEqual(
+    generateInsights({
+      activity: {
+        steps: Number.NaN,
+      },
+    }),
+    [],
+  );
+  assert.deepEqual(
+    generateInsights({
+      activity: {
+        steps: "3000",
+      },
+    }),
+    [],
+  );
+  assert.deepEqual(
+    generateInsights({
+      activity: {
+        steps: -1,
+      },
+    }),
+    [],
+  );
+});
+
 test("generateInsights returns short_main_sleep with high severity at 350 minutes", async () => {
   const { generateInsights } = await loadModules();
 
@@ -88,6 +194,42 @@ test("generateInsights does not create a sleep insight at 450 minutes", async ()
   });
 
   assert.deepEqual(insights, []);
+});
+
+test("generateInsights returns short_main_sleep and low_activity together", async () => {
+  const { generateInsights } = await loadModules();
+
+  const insights = generateInsights({
+    sleep: {
+      mainSleep: {
+        durationMinutes: 390,
+      },
+    },
+    activity: {
+      steps: 3000,
+    },
+  });
+
+  assert.deepEqual(insights, [
+    {
+      id: "short_main_sleep",
+      type: "short_main_sleep",
+      severity: "moderate",
+      evidence: {
+        durationMinutes: 390,
+        thresholdMinutes: 420,
+      },
+    },
+    {
+      id: "low_activity",
+      type: "low_activity",
+      severity: "moderate",
+      evidence: {
+        stepCount: 3000,
+        thresholdSteps: 5000,
+      },
+    },
+  ]);
 });
 
 test("null mainSleep stays safe through normalization and insight generation", async () => {
