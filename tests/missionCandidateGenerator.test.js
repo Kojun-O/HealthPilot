@@ -37,7 +37,7 @@ test("generateMissionCandidates returns one rest candidate for moderate short_ma
 
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -64,7 +64,7 @@ test("generateMissionCandidates returns the same candidate for high short_main_s
 
   assert.equal(candidates.length, 1);
   assert.deepEqual(candidates[0], {
-    id: "short-main-sleep-rest",
+    id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
     title: "昼休みに15分、目を閉じて休む",
@@ -90,7 +90,7 @@ test("generateMissionCandidates returns one activity candidate for low_activity"
 
   assert.deepEqual(candidates, [
     {
-      id: "low-activity-walk",
+      id: "walk_outdoors_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
       title: "今日は15分だけ外を歩く",
@@ -111,7 +111,7 @@ test("generateMissionCandidates does not return low_activity mission when low_ac
     },
   ]);
 
-  assert.equal(candidates.some((candidate) => candidate.id === "low-activity-walk"), false);
+  assert.equal(candidates.some((candidate) => candidate.id === "walk_outdoors_15min"), false);
 });
 
 test("generateMissionCandidates ignores unsupported insights and unsafe inputs", async () => {
@@ -147,7 +147,7 @@ test("generateMissionCandidates deduplicates identical mission candidates and ke
 
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["sleep_a", "sleep_b"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -187,7 +187,7 @@ test("generateMissionCandidates returns two candidates from short_main_sleep and
 
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -195,7 +195,7 @@ test("generateMissionCandidates returns two candidates from short_main_sleep and
       estimatedDurationMinutes: 15,
     },
     {
-      id: "low-activity-walk",
+      id: "walk_outdoors_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
       title: "今日は15分だけ外を歩く",
@@ -240,7 +240,7 @@ test("generateInsights output can be passed directly into generateMissionCandida
   ]);
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -289,7 +289,7 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
   ]);
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -297,7 +297,7 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
       estimatedDurationMinutes: 15,
     },
     {
-      id: "low-activity-walk",
+      id: "walk_outdoors_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
       title: "今日は15分だけ外を歩く",

@@ -25,7 +25,7 @@ async function loadModules() {
 test("selectMissions returns one candidate when input has one candidate", async () => {
   const { selectMissions } = await loadModules();
   const candidate = {
-    id: "short-main-sleep-rest",
+    id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
     title: "昼休みに15分、目を閉じて休む",
@@ -41,7 +41,7 @@ test("selectMissions returns one candidate when input has one candidate", async 
 test("selectMissions returns only the first candidate when input has multiple candidates", async () => {
   const { selectMissions } = await loadModules();
   const first = {
-    id: "short-main-sleep-rest",
+    id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
     title: "昼休みに15分、目を閉じて休む",
@@ -75,7 +75,7 @@ test("selectMissions returns empty array for empty or invalid inputs", async () 
 test("selectMissions does not mutate input array or candidate objects", async () => {
   const { selectMissions } = await loadModules();
   const first = {
-    id: "short-main-sleep-rest",
+    id: "rest_eyes_closed_15min",
     sourceInsightIds: ["sleep_a"],
     type: "rest",
     title: "昼休みに15分、目を閉じて休む",
@@ -133,7 +133,7 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
   ]);
   assert.deepEqual(candidates, [
     {
-      id: "short-main-sleep-rest",
+      id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
@@ -142,7 +142,7 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
     },
   ]);
   assert.equal(selectedMissions.length, 1);
-  assert.equal(selectedMissions[0].id, "short-main-sleep-rest");
+  assert.equal(selectedMissions[0].id, "rest_eyes_closed_15min");
   assert.equal(selectedMissions[0].title, "昼休みに15分、目を閉じて休む");
   assert.deepEqual(selectedMissions[0].sourceInsightIds, ["short_main_sleep"]);
   assert.equal(selectedMissions[0].rationale, "昨夜の主睡眠が7時間未満だったため");

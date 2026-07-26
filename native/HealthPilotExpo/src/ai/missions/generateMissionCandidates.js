@@ -1,5 +1,5 @@
 const SHORT_MAIN_SLEEP_CANDIDATE = Object.freeze({
-  id: "short-main-sleep-rest",
+  id: "rest_eyes_closed_15min",
   type: "rest",
   title: "昼休みに15分、目を閉じて休む",
   rationale: "昨夜の主睡眠が7時間未満だったため",
@@ -7,7 +7,7 @@ const SHORT_MAIN_SLEEP_CANDIDATE = Object.freeze({
 });
 
 const LOW_ACTIVITY_CANDIDATE = Object.freeze({
-  id: "low-activity-walk",
+  id: "walk_outdoors_15min",
   type: "activity",
   title: "今日は15分だけ外を歩く",
   rationale: "歩数が少なく、活動量が不足しています。",
