@@ -138,6 +138,7 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
   ]);
   assert.equal(selectedMissions.length, 1);

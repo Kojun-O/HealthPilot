@@ -42,6 +42,7 @@ test("generateMissionCandidates returns one rest candidate for moderate short_ma
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
   ]);
 });
@@ -68,6 +69,7 @@ test("generateMissionCandidates returns the same candidate for high short_main_s
     type: "rest",
     title: "昼休みに15分、目を閉じて休む",
     rationale: "昨夜の主睡眠が7時間未満だったため",
+    estimatedDurationMinutes: 15,
   });
 });
 
@@ -93,6 +95,7 @@ test("generateMissionCandidates returns one activity candidate for low_activity"
       type: "activity",
       title: "今日は15分だけ外を歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      estimatedDurationMinutes: 15,
     },
   ]);
 });
@@ -149,6 +152,7 @@ test("generateMissionCandidates deduplicates identical mission candidates and ke
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
   ]);
   assert.deepEqual(insights, snapshot);
@@ -188,6 +192,7 @@ test("generateMissionCandidates returns two candidates from short_main_sleep and
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
     {
       id: "low-activity-walk",
@@ -195,9 +200,11 @@ test("generateMissionCandidates returns two candidates from short_main_sleep and
       type: "activity",
       title: "今日は15分だけ外を歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      estimatedDurationMinutes: 15,
     },
   ]);
   assert.deepEqual(Object.keys(candidates[1]).sort(), [
+    "estimatedDurationMinutes",
     "id",
     "rationale",
     "sourceInsightIds",
@@ -238,6 +245,7 @@ test("generateInsights output can be passed directly into generateMissionCandida
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
   ]);
 });
@@ -286,6 +294,7 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
       type: "rest",
       title: "昼休みに15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      estimatedDurationMinutes: 15,
     },
     {
       id: "low-activity-walk",
@@ -293,6 +302,7 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
       type: "activity",
       title: "今日は15分だけ外を歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      estimatedDurationMinutes: 15,
     },
   ]);
   assert.deepEqual(selectedMissions, [candidates[0]]);
