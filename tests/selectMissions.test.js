@@ -28,8 +28,9 @@ test("selectMissions returns one candidate when input has one candidate", async 
     id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
-    title: "昼休みに15分、目を閉じて休む",
+    title: "15分、目を閉じて休む",
     rationale: "昨夜の主睡眠が7時間未満だったため",
+    evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
   };
 
   const selected = selectMissions([candidate]);
@@ -44,8 +45,9 @@ test("selectMissions returns only the first candidate when input has multiple ca
     id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
-    title: "昼休みに15分、目を閉じて休む",
+    title: "15分、目を閉じて休む",
     rationale: "昨夜の主睡眠が7時間未満だったため",
+    evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
   };
   const second = {
     id: "hydrate-water",
@@ -78,8 +80,9 @@ test("selectMissions does not mutate input array or candidate objects", async ()
     id: "rest_eyes_closed_15min",
     sourceInsightIds: ["sleep_a"],
     type: "rest",
-    title: "昼休みに15分、目を閉じて休む",
+    title: "15分、目を閉じて休む",
     rationale: "昨夜の主睡眠が7時間未満だったため",
+    evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
   };
   const second = {
     id: "walk-10",
@@ -95,8 +98,12 @@ test("selectMissions does not mutate input array or candidate objects", async ()
 
   assert.deepEqual(candidates, beforeSnapshot);
   assert.deepEqual(first.sourceInsightIds, ["sleep_a"]);
-  assert.equal(first.title, "昼休みに15分、目を閉じて休む");
+  assert.equal(first.title, "15分、目を閉じて休む");
   assert.equal(first.rationale, "昨夜の主睡眠が7時間未満だったため");
+  assert.equal(
+    first.evidenceSummary,
+    "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
+  );
   assert.equal(selected[0], first);
 });
 
@@ -136,14 +143,19 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
   assert.equal(selectedMissions.length, 1);
   assert.equal(selectedMissions[0].id, "rest_eyes_closed_15min");
-  assert.equal(selectedMissions[0].title, "昼休みに15分、目を閉じて休む");
+  assert.equal(selectedMissions[0].title, "15分、目を閉じて休む");
   assert.deepEqual(selectedMissions[0].sourceInsightIds, ["short_main_sleep"]);
   assert.equal(selectedMissions[0].rationale, "昨夜の主睡眠が7時間未満だったため");
+  assert.equal(
+    selectedMissions[0].evidenceSummary,
+    "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
+  );
 });

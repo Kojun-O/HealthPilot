@@ -66,7 +66,7 @@ Example:
 
 ```text
 rest_eyes_closed_15min
-walk_outdoors_15min
+walk_15min
 ```
 
 ---
@@ -339,7 +339,7 @@ Good:
 
 ```text
 rest_eyes_closed_15min
-walk_outdoors_15min
+walk_15min
 ```
 
 Avoid:

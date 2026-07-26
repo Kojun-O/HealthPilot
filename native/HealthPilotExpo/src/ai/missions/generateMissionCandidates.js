@@ -1,16 +1,18 @@
 const SHORT_MAIN_SLEEP_CANDIDATE = Object.freeze({
   id: "rest_eyes_closed_15min",
   type: "rest",
-  title: "昼休みに15分、目を閉じて休む",
+  title: "15分、目を閉じて休む",
   rationale: "昨夜の主睡眠が7時間未満だったため",
+  evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
   estimatedDurationMinutes: 15,
 });
 
 const LOW_ACTIVITY_CANDIDATE = Object.freeze({
-  id: "walk_outdoors_15min",
+  id: "walk_15min",
   type: "activity",
-  title: "今日は15分だけ外を歩く",
+  title: "15分歩く",
   rationale: "歩数が少なく、活動量が不足しています。",
+  evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
   estimatedDurationMinutes: 15,
 });
 
@@ -63,6 +65,7 @@ export function generateMissionCandidates(insights) {
       type: template.type,
       title: template.title,
       rationale: template.rationale,
+      evidenceSummary: template.evidenceSummary,
       estimatedDurationMinutes: template.estimatedDurationMinutes,
     });
   }

@@ -40,8 +40,9 @@ test("generateMissionCandidates returns one rest candidate for moderate short_ma
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
@@ -67,8 +68,9 @@ test("generateMissionCandidates returns the same candidate for high short_main_s
     id: "rest_eyes_closed_15min",
     sourceInsightIds: ["short_main_sleep"],
     type: "rest",
-    title: "昼休みに15分、目を閉じて休む",
+    title: "15分、目を閉じて休む",
     rationale: "昨夜の主睡眠が7時間未満だったため",
+    evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
     estimatedDurationMinutes: 15,
   });
 });
@@ -90,11 +92,12 @@ test("generateMissionCandidates returns one activity candidate for low_activity"
 
   assert.deepEqual(candidates, [
     {
-      id: "walk_outdoors_15min",
+      id: "walk_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
-      title: "今日は15分だけ外を歩く",
+      title: "15分歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
@@ -111,7 +114,7 @@ test("generateMissionCandidates does not return low_activity mission when low_ac
     },
   ]);
 
-  assert.equal(candidates.some((candidate) => candidate.id === "walk_outdoors_15min"), false);
+  assert.equal(candidates.some((candidate) => candidate.id === "walk_15min"), false);
 });
 
 test("generateMissionCandidates ignores unsupported insights and unsafe inputs", async () => {
@@ -150,8 +153,9 @@ test("generateMissionCandidates deduplicates identical mission candidates and ke
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["sleep_a", "sleep_b"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
@@ -190,21 +194,24 @@ test("generateMissionCandidates returns two candidates from short_main_sleep and
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
     {
-      id: "walk_outdoors_15min",
+      id: "walk_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
-      title: "今日は15分だけ外を歩く",
+      title: "15分歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
   assert.deepEqual(Object.keys(candidates[1]).sort(), [
     "estimatedDurationMinutes",
+    "evidenceSummary",
     "id",
     "rationale",
     "sourceInsightIds",
@@ -243,8 +250,9 @@ test("generateInsights output can be passed directly into generateMissionCandida
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
@@ -292,16 +300,18 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
       id: "rest_eyes_closed_15min",
       sourceInsightIds: ["short_main_sleep"],
       type: "rest",
-      title: "昼休みに15分、目を閉じて休む",
+      title: "15分、目を閉じて休む",
       rationale: "昨夜の主睡眠が7時間未満だったため",
+      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
       estimatedDurationMinutes: 15,
     },
     {
-      id: "walk_outdoors_15min",
+      id: "walk_15min",
       sourceInsightIds: ["low_activity"],
       type: "activity",
-      title: "今日は15分だけ外を歩く",
+      title: "15分歩く",
       rationale: "歩数が少なく、活動量が不足しています。",
+      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
       estimatedDurationMinutes: 15,
     },
   ]);
