@@ -1,378 +1,257 @@
-# Mission Model
+# Mission Architecture
 
 ## Purpose
 
-Health Pilot does not simply display health data.
+Health Pilot converts health data into clear daily actions.
 
-Its purpose is to convert health data into clear, actionable daily choices.
-
-The mission pipeline is:
+The Mission architecture keeps this flow explicit:
 
 ```text
 Health Data
-    ↓
+  ↓
 Normalization
-    ↓
+  ↓
 Insight Generation
-    ↓
+  ↓
 Mission Candidate Generation
-    ↓
+  ↓
 Mission Selection
-    ↓
-Today's Missions
-    ↓
-Completion & Outcome Evaluation
+  ↓
+Today's Mission(s)
 ```
 
-Each stage has a single responsibility.
-
-- **Insights** explain what is happening.
-- **Mission Candidates** propose possible actions.
-- **Mission Selection** decides which actions should be shown today.
-
-This separation keeps the system explainable, testable, and easy to evolve.
+Mission Definition, Mission Candidate, and Mission Selection each have a distinct responsibility so the system stays explainable, testable, and maintainable.
 
 ---
-
-# Mission Candidate v1.0
-
-The current implementation intentionally combines two conceptual models into one object.
-
-This keeps the architecture simple while the Mission library is still small.
-
-```ts
-type MissionCandidate = {
-  id: string;
-  sourceInsightIds: string[];
-  type: string;
-  title: string;
-  rationale: string;
-  evidenceSummary: string;
-  estimatedDurationMinutes?: number;
-};
-```
-
-## Fields
-
-### id
-
-A stable, action-based identifier.
-
-The ID describes **the action**, not the Insight that generated it.
-
-Mission titles may change without changing the ID.
-
-Example:
-
-```text
-rest_eyes_closed_15min
-walk_15min
-```
-
----
-
-### sourceInsightIds
-
-The Insight IDs that caused this Mission Candidate to be generated.
-
-One Mission Candidate may originate from multiple Insights.
-
----
-
-### type
-
-The current action category.
-
-Examples:
-
-```text
-rest
-activity
-```
-
-The name `type` is acceptable for v1.0.
-
-Renaming it to `category` may be considered later.
-
----
-
-### title
-
-The user-facing description of the Mission.
-
-Example:
-
-> Rest your eyes for 15 minutes.
-
-Titles are free to change.
-
-The Mission ID must remain stable.
-
----
-
-### rationale
-
-Explains why this Mission is relevant **today**.
-
-It is generated from the user's current health state.
-
-Example:
-
-> Your main sleep duration was shorter than the target.
-
----
-
-### evidenceSummary
-
-Explains why this action may generally help.
-
-Unlike `rationale`, this is reusable knowledge.
-
-Example:
-
-> A short period of eyes-closed rest may reduce subjective fatigue and sleepiness.
-
----
-
-### estimatedDurationMinutes
-
-Approximate execution time.
-
-Rules:
-
-- optional
-- positive integer
-- omit when unknown
-- never use `null`
-
-Example:
-
-```text
-15
-```
-
----
-
-# Rationale vs Evidence Summary
-
-These two concepts must remain separate.
-
-## rationale
-
-Why this Mission is relevant **today**.
-
-Example:
-
-```text
-Your main sleep duration was shorter than the target.
-```
-
-## evidenceSummary
-
-Why the action itself may help.
-
-Example:
-
-```text
-A short period of eyes-closed rest may reduce subjective fatigue.
-```
-
-In short:
-
-```text
-rationale
-=
-Why today?
-
-evidenceSummary
-=
-Why this action?
-```
-
----
-
-# Future Architecture
-
-The current model intentionally combines two concepts.
-
-In the future they may be separated.
 
 ## Mission Definition
 
-Reusable knowledge.
+### Purpose
+
+Mission Definition standardizes the actions managed by Health Pilot.
+
+It represents reusable action knowledge across users, insights, and dates. It is not a recommendation for a specific user or a specific day.
+
+### Responsibility
+
+Mission Definition is responsible for:
+
+- Defining the action itself.
+- Holding shared attributes of the action.
+- Remaining reusable across users, dates, and recommendation contexts.
+
+Mission Definition is NOT responsible for:
+
+- Determining suitability for a specific user.
+- Determining whether the action should be recommended today.
+- Determining Mission priority.
+- Holding execution state.
+- Guaranteeing health improvement.
+
+### Data Model
 
 ```ts
 type MissionDefinition = {
   id: string;
-  type: string;
   title: string;
+  type: string;
   evidenceSummary: string;
   estimatedDurationMinutes?: number;
 };
 ```
 
-Mission Definitions do **not** depend on today's health data.
+### Design Principles
 
-They are reusable across users and across days.
+1. Define one action only.
+2. Be reusable.
+3. Be independent of Insights and recommendation context.
+4. Be evidence-informed.
+5. Represent a behavior, not diagnosis or treatment.
+6. Be understandable without specialist knowledge.
+7. Avoid assumptions about specific users.
+
+### Deferred Extensions
+
+Do not add these until concrete product requirements exist:
+
+- eligibility requirements
+- contraindications
+- intensity / difficulty
+- supporting references
+- parameterized actions
+- Mission Definition versioning
 
 ---
 
 ## Mission Candidate
 
-Today's proposal.
+### Purpose
+
+Mission Candidate is a temporary recommendation candidate that adds contextual rationale for a Mission Definition.
+
+Mission Candidate is input to Mission Selection.
+
+Mission Candidate is not limited to one source type. It may be generated from available information such as Insights, check-ins, mission history, and user preferences.
+
+### Responsibility
+
+Mission Candidate is responsible for:
+
+- Referencing exactly one Mission Definition.
+- Holding why the Mission is relevant in the current context.
+- Identifying the information sources that support the recommendation.
+- Providing evaluation input for Mission Selection.
+
+Mission Candidate is NOT responsible for:
+
+- Defining a new Mission.
+- Modifying Mission Definition.
+- Holding final ranking or selection results.
+- Deciding which Mission to present today.
+- Holding completion state.
+- Finalizing UI copy.
+
+### Data Model
+
+Use this v1 model:
 
 ```ts
 type MissionCandidate = {
-  missionId: string;
-  sourceInsightIds: string[];
+  definitionId: string;
   rationale: string;
+  sourceInsightIds: string[];
 };
 ```
 
-Mission Candidates connect today's Insights with reusable Mission Definitions.
+If non-Insight source tracking becomes a real product need, `sourceInsightIds` may evolve to `sourceRefs`. Do not generalize prematurely.
+
+### Design Principles
+
+1. Reference exactly one Mission Definition.
+2. Represent why the Mission is relevant in the current context.
+3. Do not redefine or modify the referenced Mission.
+4. Keep recommendation rationale distinct from selection reason.
+5. Identify the information supporting the recommendation.
+6. Remain independent of Mission Selection.
+7. Be disposable after Mission Selection unless retained for audit purposes.
+8. Do not depend on one specific input source.
+
+### Architecture Rules
+
+- Insight interprets state and does not decide concrete actions.
+- Every Mission Candidate SHALL reference exactly one Mission Definition.
+- Mission Candidate holds recommendation rationale and does not hold final evaluation results such as `priority`, `rank`, `finalScore`, or `selected`.
 
 ---
 
-Future pipeline:
+## Mission Selection
+
+### Purpose
+
+Mission Selection evaluates Mission Candidates and determines the set of Missions to present to the user for the day.
+
+Based on Health Pilot recommendation policy, it handles suitability checks, exclusion, prioritization, overlap adjustment, and mission count decisions.
+
+Mission Selection is a decision process, not a data model.
+
+### Internal Flow
+
+Keep these steps conceptually separable:
 
 ```text
-Insights
-        +
-Mission Definitions
-        ↓
-Mission Candidate Generation
-        ↓
-Mission Candidates
+Eligibility filtering
+  ↓
+Ranking
+  ↓
+Conflict / redundancy resolution
+  ↓
+Mission set composition
 ```
 
-Mission Definitions are **not generated from Insights**.
+In v1, implementation may be a single process or service.
 
----
-
-# Why Separation Is Deferred
-
-The Mission library is currently very small.
-
-Separating Mission Definition and Mission Candidate now would introduce:
-
-- repositories
-- loaders
-- storage abstractions
-- additional complexity
-
-without enough benefit.
-
-Following **YAGNI**, the combined model is intentionally kept until the Mission library grows.
-
-The current model should remain easy to separate later.
-
----
-
-# Mission Selection Boundary
-
-Mission Candidates do **not** decide whether they are shown.
+### Responsibility
 
 Mission Selection is responsible for:
 
-- priority
-- deduplication
-- user preferences
-- Mission history
-- repetition avoidance
-- time constraints
-- safety constraints
+- Evaluating Mission Candidates.
+- Evaluating suitability for the user and current context using available information.
+- Excluding candidates that are unsuitable, infeasible, conflicting, or clearly risky.
+- Determining priority among candidates.
+- Resolving redundancy and conflicts across missions.
+- Deciding mission count and composition.
+- Returning no selection when no suitable candidate exists.
 
-Mission Candidate should remain a passive data model.
+Mission Selection is NOT responsible for:
 
----
+- Defining Missions.
+- Modifying Mission Definition.
+- Generating Mission Candidates.
+- Generating candidate recommendation rationale.
+- Generating health data or Insights.
+- Evaluating execution outcomes.
+- Constructing UI wording.
+- Guaranteeing medical safety or health improvement.
 
-# Mission Assignment
+### Selection Criteria
 
-Showing a Mission to the user is a separate concept.
+Mission Selection may consider:
 
-Eventually, a Mission Assignment model will be introduced.
+- Relevance to current context.
+- Eligibility based on available information.
+- Feasibility today.
+- Estimated duration.
+- Redundancy and conflicts between missions.
+- Past mission presentation and execution history.
+- User preferences and constraints.
+- Presence and freshness of supporting data.
 
-```ts
-type MissionAssignment = {
-  assignmentId: string;
-  missionId: string;
-  selectedAt: string;
-  status: "pending" | "completed" | "skipped";
-  completedAt?: string;
-};
-```
+In v1, minimal implementation may focus on relevance, redundancy avoidance, and mission count.
 
-The same Mission may be assigned many times.
+### Design Principles
 
-Example:
+1. Select missions relevant to the user and the current situation.
+2. Exclude missions that are clearly unsuitable based on available information.
+3. Prefer actions that are feasible today.
+4. Avoid redundant or conflicting missions.
+5. Limit the number of missions to reduce cognitive load.
+6. Preserve transparency about why each Mission was relevant and selected.
+7. Allow fewer or no Missions when suitable candidates do not exist.
+8. Avoid medical diagnosis or treatment decisions.
+9. Be explainable and reproducible where practical.
 
-```text
-Mission
-rest_eyes_closed_15min
+### Architecture Rules
 
-↓
-
-Monday assignment
-
-↓
-
-Friday assignment
-```
-
-The Mission is the same.
-
-The Assignments are different.
-
----
-
-# Mission ID Rules
-
-Mission IDs follow these rules.
-
-- lowercase
-- snake_case
-- describe the action
-- never describe the Insight
-- include duration only when it is intrinsic to the action
-
-Good:
-
-```text
-rest_eyes_closed_15min
-walk_15min
-```
-
-Avoid:
-
-```text
-short_main_sleep_rest
-low_activity_walk
-```
+- Mission Selection does not modify Mission Definition.
+- If a 15-minute Mission is changed to 5 minutes, treat it as a different Definition or future parameterization, not a display-only adjustment.
+- Distinguish candidate rationale from selection reason.
+- Candidate rationale means why a Mission became a candidate.
+- Selection reason means why a candidate was selected among alternatives.
+- In v1 persisted data, selection reason is optional and may be handled as logs or debug metadata.
+- If suitable candidates do not exist, do not force a fixed mission count.
+- Deterministic behavior is not an absolute requirement; follow explainable and reproducible where practical.
 
 ---
 
-# Non-Goals for v1.0
+## Mission Architecture Status
 
-Mission Candidate v1.0 intentionally does **not** include:
+Mission Definition, Mission Candidate, and Mission Selection are Accepted as Mission Architecture v1.0.
 
-- Mission repository
-- JSON storage
-- database storage
-- LLM-generated Missions
-- Mission ranking
-- personalization
-- preferred time
-- preferred location
-- difficulty
-- calories
-- UI behavior
+Accepted means the architecture is ready to use as the baseline for follow-up design and v1 implementation. It does not mean forbidden to change.
 
-These may be introduced later if they provide clear value.
+Change only when one of the following is true:
+
+- actual product requirement cannot be represented
+- implementation reveals a recurring responsibility conflict
+- safety or privacy requirements require a new boundary
+- multiple components repeatedly duplicate the same logic
+
+Do not change only because a possible future need is imagined.
 
 ---
 
-# Architecture Principle
+## Architecture Principle
 
-Health Pilot's value is **not** displaying health data.
+Health Pilot is not a dashboard.
 
-Its value is converting health data into clear, actionable choices while preserving the user's final decision.
+Its value is to reduce cognitive load by recommending clear daily actions while preserving user autonomy.
