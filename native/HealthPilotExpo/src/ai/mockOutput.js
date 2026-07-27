@@ -10,18 +10,21 @@ export const mockAiOutput = {
   },
   missions: [
     {
+      definitionId: "sleep_before_2300",
       title: "23:00までに就寝",
       expectedImpact: 4,
       confidence: "High",
       why: "睡眠時間を確保することで、明日の回復と集中力が上がる可能性があります。",
     },
     {
+      definitionId: "walk_after_dinner_10min",
       title: "夕食後に10分歩く",
       expectedImpact: 2,
       confidence: "Medium",
       why: "軽い活動は血流と気分を整え、翌日のコンディションに良い影響を与える可能性があります。",
     },
     {
+      definitionId: "no_caffeine_after_1500",
       title: "15時以降カフェインなし",
       expectedImpact: 1,
       confidence: "Medium",

@@ -4,6 +4,8 @@ import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
 import { AIBriefingCard } from "./src/components/AIBriefingCard";
+import { getMissionStableId } from "./src/ai/missionStableId";
+import { useDailyRecord } from "./src/hooks/useDailyRecord";
 
 const CHECK_IN_ITEMS = [
   { key: "condition", label: "体調" },
@@ -17,14 +19,6 @@ export default function App() {
   const [insight, setInsight] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
-  const [completedMissions, setCompletedMissions] = useState({});
-  const [checkInRatings, setCheckInRatings] = useState({
-    condition: 3,
-    sleep: 3,
-    focus: 3,
-    mentalSpace: 3,
-    activity: 3,
-  });
 
   const formatLocalTime = useCallback((date) => {
     const hours = String(date.getHours()).padStart(2, "0");
@@ -34,9 +28,35 @@ export default function App() {
   }, []);
 
   const loadInsight = useCallback(async () => {
-    const { input } = await buildAiInput();
-    return generateHealthPilotInsight(input);
+    const { input, healthSnapshot: nextHealthSnapshot } = await buildAiInput();
+    const nextInsight = await generateHealthPilotInsight(input);
+
+    return {
+      insight: nextInsight,
+      healthSnapshot: nextHealthSnapshot,
+    };
   }, []);
+
+  const safeInsight = insight && typeof insight === "object" ? insight : null;
+  const missions = Array.isArray(safeInsight?.missions) ? safeInsight.missions : [];
+  const baselineTomorrow =
+    typeof safeInsight?.tomorrowCapacity?.baseline === "number"
+    && Number.isFinite(safeInsight.tomorrowCapacity.baseline)
+      ? safeInsight.tomorrowCapacity.baseline
+      : 0;
+
+  const {
+    checkInRatings,
+    completedImpact,
+    isMissionCompleted,
+    projectedTomorrow,
+    setHealthSnapshot,
+    toggleMissionCompletion,
+    updateCheckInRating,
+  } = useDailyRecord({
+    missions,
+    baselineTomorrow,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +68,8 @@ export default function App() {
         return;
       }
 
-      setInsight(result);
+      setInsight(result.insight);
+      setHealthSnapshot(result.healthSnapshot ?? null);
       setLastUpdatedAt(new Date());
     }
 
@@ -57,26 +78,20 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [loadInsight]);
+  }, [loadInsight, setHealthSnapshot]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
 
     try {
       const result = await loadInsight();
-      setInsight(result);
+      setInsight(result.insight);
+      setHealthSnapshot(result.healthSnapshot);
     } finally {
       setLastUpdatedAt(new Date());
       setRefreshing(false);
     }
-  }, [loadInsight]);
-
-  const handleMissionToggle = useCallback((missionIndex) => {
-    setCompletedMissions((prev) => ({
-      ...prev,
-      [missionIndex]: !prev[missionIndex],
-    }));
-  }, []);
+  }, [loadInsight, setHealthSnapshot]);
 
   const handleChallengeMissionInfoPress = useCallback(() => {
     Alert.alert(
@@ -86,7 +101,7 @@ export default function App() {
     );
   }, []);
 
-  if (!insight) {
+  if (!safeInsight) {
     return (
       <View style={styles.container}>
         <Text style={styles.logo}>Health Pilot</Text>
@@ -95,26 +110,6 @@ export default function App() {
       </View>
     );
   }
-
-  const baselineTomorrow =
-    typeof insight.tomorrowCapacity.baseline === "number" && Number.isFinite(insight.tomorrowCapacity.baseline)
-      ? insight.tomorrowCapacity.baseline
-      : 0;
-
-  const completedImpact = insight.missions.reduce((sum, mission, index) => {
-    if (!completedMissions[index]) {
-      return sum;
-    }
-
-    const impact =
-      typeof mission.expectedImpact === "number" && Number.isFinite(mission.expectedImpact)
-        ? mission.expectedImpact
-        : 0;
-
-    return sum + impact;
-  }, 0);
-
-  const projectedTomorrow = Math.min(100, baselineTomorrow + completedImpact);
 
   return (
     <View style={styles.container}>
@@ -129,23 +124,31 @@ export default function App() {
       >
         <Text style={styles.logo}>Health Pilot</Text>
 
-        <AIBriefingCard title={insight.aiBriefing.title} message={insight.aiBriefing.message} />
+        <AIBriefingCard title={safeInsight.aiBriefing.title} message={safeInsight.aiBriefing.message} />
 
         <View style={styles.missionSection}>
           <Text style={styles.section}>Mission</Text>
-          {insight.missions.map((mission, index) => (
-            <Pressable
-              key={index}
-              onPress={() => handleMissionToggle(index)}
-              accessibilityRole="button"
-              accessibilityState={{ checked: Boolean(completedMissions[index]) }}
-              style={styles.missionRow}
-            >
-              <Text style={styles.missionItem}>
-                {completedMissions[index] ? "☑" : "☐"} {mission.title}
-              </Text>
-            </Pressable>
-          ))}
+          {missions.map((mission) => {
+            const missionId = getMissionStableId(mission);
+
+            if (!missionId) {
+              return null;
+            }
+
+            return (
+              <Pressable
+                key={missionId}
+                onPress={() => toggleMissionCompletion(mission)}
+                accessibilityRole="button"
+                accessibilityState={{ checked: isMissionCompleted(mission) }}
+                style={styles.missionRow}
+              >
+                <Text style={styles.missionItem}>
+                  {isMissionCompleted(mission) ? "☑" : "☐"} {mission.title}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.discoverySection}>
@@ -161,21 +164,21 @@ export default function App() {
             </Pressable>
           </View>
           <Text style={styles.discoverySubtitle}>今日はどれか一つ試してみませんか？</Text>
-          <Text style={styles.discoveryItem}>🌱 {insight.discovery.title}</Text>
+          <Text style={styles.discoveryItem}>🌱 {safeInsight.discovery.title}</Text>
           <Text style={styles.discoveryBenefitLabel}>期待できること</Text>
           <Text style={styles.discoveryBenefitValue}>午後の集中力アップ</Text>
         </View>
 
         <View style={styles.compactCard}>
-          <Text style={styles.section}>{insight.reflection.title}</Text>
+          <Text style={styles.section}>{safeInsight.reflection.title}</Text>
           <Text numberOfLines={3} style={styles.reflectionSummary}>
-            {insight.reflection.summary}
+            {safeInsight.reflection.summary}
           </Text>
         </View>
 
         <View style={styles.compactCard}>
           <Text style={styles.section}>Today's Capacity</Text>
-          <Text style={styles.capacity}>{insight.todayCapacity}</Text>
+          <Text style={styles.capacity}>{safeInsight.todayCapacity}</Text>
         </View>
 
         <View style={styles.compactCard}>
@@ -183,9 +186,9 @@ export default function App() {
           <Text style={styles.tomorrowValue}>
             {baselineTomorrow} → {projectedTomorrow} (+{completedImpact})
           </Text>
-          {insight.tomorrowCapacity.reason ? (
+          {safeInsight.tomorrowCapacity.reason ? (
             <Text numberOfLines={2} style={styles.tomorrowReason}>
-              {insight.tomorrowCapacity.reason}
+              {safeInsight.tomorrowCapacity.reason}
             </Text>
           ) : null}
           {lastUpdatedAt ? (
@@ -211,12 +214,9 @@ export default function App() {
                         return (
                           <Pressable
                             key={value}
-                            onPress={() =>
-                              setCheckInRatings((prev) => ({
-                                ...prev,
-                                [item.key]: value,
-                              }))
-                            }
+                            onPress={() => {
+                              updateCheckInRating(item.key, value);
+                            }}
                             accessibilityRole="button"
                             accessibilityLabel={`${item.label} ${value}`}
                             style={styles.dotPressable}
