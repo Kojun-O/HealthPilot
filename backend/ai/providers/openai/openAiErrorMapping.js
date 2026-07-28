@@ -12,6 +12,10 @@ function normalizedCode(error) {
   return typeof error?.code === "string" ? error.code.toUpperCase() : "";
 }
 
+function normalizedName(error) {
+  return typeof error?.name === "string" ? error.name.toUpperCase() : "";
+}
+
 function normalizedMessage(error) {
   return typeof error?.message === "string" ? error.message.toLowerCase() : "";
 }
@@ -36,12 +40,22 @@ export function mapOpenAiClientError(error) {
   }
 
   const code = normalizedCode(error);
+  const name = normalizedName(error);
   const message = normalizedMessage(error);
   const status = Number.isInteger(error?.status) ? error.status : Number.isInteger(error?.statusCode) ? error.statusCode : null;
+
+  if (code.includes("REFUSAL") || message.includes("refus")) {
+    return createOpenAiProviderError("invalid structured response", error);
+  }
+
+  if (code.includes("INCOMPLETE") || message.includes("incomplete")) {
+    return createOpenAiProviderError("invalid structured response", error);
+  }
 
   if (
     code.includes("CONFIG") ||
     code.includes("MISSING_API_KEY") ||
+    name.includes("CONFIG") ||
     message.includes("configuration") ||
     message.includes("api key")
   ) {
@@ -52,6 +66,7 @@ export function mapOpenAiClientError(error) {
     status === 401 ||
     status === 403 ||
     code.includes("AUTH") ||
+    name === "AUTHENTICATIONERROR" ||
     message.includes("unauthorized") ||
     message.includes("forbidden")
   ) {
@@ -62,6 +77,7 @@ export function mapOpenAiClientError(error) {
     code === "ETIMEDOUT" ||
     code === "ECONNABORTED" ||
     code === "ABORT_ERR" ||
+    name === "APICONNECTIONTIMEOUTERROR" ||
     code.includes("TIMEOUT") ||
     message.includes("timed out") ||
     message.includes("timeout")
@@ -69,7 +85,7 @@ export function mapOpenAiClientError(error) {
     return createOpenAiProviderError("timeout", error);
   }
 
-  if (status === 429 || code.includes("RATE_LIMIT") || message.includes("rate limit")) {
+  if (status === 429 || code.includes("RATE_LIMIT") || name === "RATELIMITERROR" || message.includes("rate limit")) {
     return createOpenAiProviderError("rate limit", error);
   }
 
@@ -80,7 +96,10 @@ export function mapOpenAiClientError(error) {
     code === "ECONNRESET" ||
     code === "EAI_AGAIN" ||
     code === "ENOTFOUND" ||
+    name === "APICONNECTIONERROR" ||
     code.includes("UPSTREAM") ||
+    code.includes("NETWORK") ||
+    message.includes("network") ||
     message.includes("service unavailable")
   ) {
     return createOpenAiProviderError("upstream unavailable", error);

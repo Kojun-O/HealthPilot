@@ -2,6 +2,7 @@ import { createAiProviderContract } from "../aiProvider.js";
 import { assertValidOpenAiClientAdapter } from "./openai/openAiClientAdapterContract.js";
 import { buildOpenAiSelectionPrompt } from "./openai/openAiPromptBuilder.js";
 import { OPEN_AI_SELECTION_STRUCTURED_OUTPUT_SCHEMA } from "./openai/openAiStructuredOutputSchema.js";
+import { getOpenAiModel } from "./openai/openAiConfig.js";
 import { mapStructuredOutputToAiSelectionResponse } from "./openai/openAiResponseMapper.js";
 import { createOpenAiProviderError, mapOpenAiClientError } from "./openai/openAiErrorMapping.js";
 
@@ -12,7 +13,7 @@ function safeTrimString(value) {
 export function createOpenAiProvider({ client, model } = {}) {
   assertValidOpenAiClientAdapter(client);
 
-  const selectedModel = safeTrimString(model);
+  const selectedModel = safeTrimString(model) || getOpenAiModel();
   if (!selectedModel) {
     throw createOpenAiProviderError("configuration error");
   }

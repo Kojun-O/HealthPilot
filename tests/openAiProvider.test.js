@@ -289,6 +289,92 @@ test("createOpenAiProvider maps configuration error", async () => {
   });
 });
 
+test("createOpenAiProvider maps missing OPENAI_API_KEY from real adapter", async () => {
+  const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
+  const { createOpenAiClient } = await import("../backend/ai/providers/openai/openAiClient.js");
+
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+
+  const provider = createOpenAiProvider({
+    model: "gpt-5-mini",
+    client: createOpenAiClient(),
+  });
+
+  try {
+    await assert.rejects(() => provider.selectMissions({ candidates: [] }), (error) => {
+      assert.equal(error?.kind, "configuration error");
+      return true;
+    });
+  } finally {
+    if (previousApiKey == null) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = previousApiKey;
+    }
+  }
+});
+
+test("createOpenAiProvider maps refusal to provider error", async () => {
+  const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
+  const { createOpenAiClient } = await import("../backend/ai/providers/openai/openAiClient.js");
+
+  const provider = createOpenAiProvider({
+    model: "gpt-5-mini",
+    client: createOpenAiClient({
+      sdkClient: {
+        responses: {
+          async create() {
+            return {
+              status: "completed",
+              output: [
+                {
+                  content: [
+                    {
+                      type: "refusal",
+                      refusal: "Cannot comply",
+                    },
+                  ],
+                },
+              ],
+            };
+          },
+        },
+      },
+    }),
+  });
+
+  await assert.rejects(() => provider.selectMissions({ candidates: [] }), (error) => {
+    assert.equal(error?.kind, "invalid structured response");
+    return true;
+  });
+});
+
+test("createOpenAiProvider maps incomplete response to provider error", async () => {
+  const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
+  const { createOpenAiClient } = await import("../backend/ai/providers/openai/openAiClient.js");
+
+  const provider = createOpenAiProvider({
+    model: "gpt-5-mini",
+    client: createOpenAiClient({
+      sdkClient: {
+        responses: {
+          async create() {
+            return {
+              status: "incomplete",
+            };
+          },
+        },
+      },
+    }),
+  });
+
+  await assert.rejects(() => provider.selectMissions({ candidates: [] }), (error) => {
+    assert.equal(error?.kind, "invalid structured response");
+    return true;
+  });
+});
+
 test("createOpenAiProvider maps upstream unavailable error", async () => {
   const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
 
@@ -309,23 +395,44 @@ test("createOpenAiProvider maps upstream unavailable error", async () => {
   });
 });
 
-test("createOpenAiProvider requires injected client adapter and model", async () => {
+test("createOpenAiProvider requires injected client adapter", async () => {
   const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
 
   assert.throws(() => createOpenAiProvider({ model: "gpt-4.1-mini" }), /must implement createStructuredResponse/);
+});
 
-  assert.throws(
-    () =>
-      createOpenAiProvider({
-        model: "",
-        client: {
-          async createStructuredResponse() {
-            return { output: {} };
+test("createOpenAiProvider uses default model constant when model is omitted", async () => {
+  const { createOpenAiProvider } = await import("../backend/ai/providers/openAiProvider.js");
+
+  const calls = [];
+  const provider = createOpenAiProvider({
+    client: {
+      async createStructuredResponse(payload) {
+        calls.push(payload);
+        return {
+          output: {
+            selections: [
+              {
+                missionId: "candidate-a",
+                reason: "default model",
+                expectedImpact: 1,
+                confidence: "medium",
+              },
+            ],
+            tomorrowCapacityComment: "ok",
+            safetyNote: null,
           },
-        },
-      }),
-    /configuration error/,
-  );
+        };
+      },
+    },
+  });
+
+  await provider.selectMissions({
+    candidates: [{ id: "candidate-a", title: "A" }],
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].model, "gpt-5-mini");
 });
 
 test("OpenAI response shape does not leak outside provider boundary", async () => {
