@@ -1,11 +1,12 @@
 import { MockTransport } from "./transports/mockTransport.js";
+import { HttpAiSelectionTransport } from "./transports/httpAiSelectionTransport.js";
 
 function resolveTransport(transport) {
   if (transport && typeof transport.selectMissions === "function") {
     return transport;
   }
 
-  return MockTransport;
+  return HttpAiSelectionTransport;
 }
 
 export function createAiSelectionClient(options = {}) {

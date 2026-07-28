@@ -3,7 +3,7 @@ import {
   generateFallbackMissionCandidates,
   generateMissionCandidates,
 } from "./generateMissionCandidates.js";
-import { AISelectionClient } from "./aiSelectionClient.js";
+import { AISelectionClient, createAiSelectionClient } from "./aiSelectionClient.js";
 import { buildAiSelectionRequest } from "./buildAiSelectionRequest.js";
 import { selectMissions } from "./selectMissions.js";
 
@@ -44,6 +44,12 @@ function resolveInsights(input) {
 function resolveAiSelectionClient(input) {
   if (input?.aiSelectionClient && typeof input.aiSelectionClient.selectMissions === "function") {
     return input.aiSelectionClient;
+  }
+
+  if (input?.aiSelectionTransport && typeof input.aiSelectionTransport.selectMissions === "function") {
+    return createAiSelectionClient({
+      transport: input.aiSelectionTransport,
+    });
   }
 
   return AISelectionClient;

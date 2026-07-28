@@ -2,6 +2,11 @@ import { normalizeAiSelectionResponse } from "./normalizeAiSelectionResponse.js"
 
 const MAX_SELECTED_MISSIONS = 3;
 
+function logBackendTransportFallback() {
+  // Dev signal only; no health payload is included.
+  console.info("BackendTransport fallback");
+}
+
 function toCandidateId(candidate) {
   return typeof candidate?.id === "string" ? candidate.id.trim() : "";
 }
@@ -86,6 +91,7 @@ export function selectMissions(candidates, options = {}) {
     );
 
     if (!normalizedAiSelectionResponse) {
+      logBackendTransportFallback();
       return localSelection;
     }
 
@@ -94,11 +100,13 @@ export function selectMissions(candidates, options = {}) {
     );
 
     if (selectedMissionIds.length === 0) {
+      logBackendTransportFallback();
       return localSelection;
     }
 
     return selectMissionsByIds(candidates, selectedMissionIds);
   } catch {
+    logBackendTransportFallback();
     return localSelection;
   }
 }

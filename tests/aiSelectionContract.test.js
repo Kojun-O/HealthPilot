@@ -150,30 +150,43 @@ test("normalizeAiSelectionResponse returns null for invalid response values", as
   assert.equal(normalizeAiSelectionResponse({ selections: null }, []), null);
 });
 
-test("AISelectionClient.selectMissions returns a Promise and resolves AI selection response contract via default MockTransport", async () => {
-  const { AISelectionClient } = await import("../native/HealthPilotExpo/src/ai/missions/aiSelectionClient.js");
-
-  const responsePromise = AISelectionClient.selectMissions({
-    candidates: [
-      { id: "a", title: "A" },
-      { id: "b", title: "B" },
-      { id: "c", title: "C" },
-      { id: "d", title: "D" },
-    ],
-  });
-
-  assert.equal(typeof responsePromise?.then, "function");
-
-  const response = await responsePromise;
-
-  assert.equal(Array.isArray(response.selections), true);
-  assert.equal(response.selections.length, 3);
-  assert.deepEqual(
-    response.selections.map((selection) => selection.missionId),
-    ["a", "b", "c"],
+test("createAiSelectionClient uses HttpAiSelectionTransport by default", async () => {
+  const { createAiSelectionClient } = await import("../native/HealthPilotExpo/src/ai/missions/aiSelectionClient.js");
+  const { HttpAiSelectionTransport } = await import(
+    "../native/HealthPilotExpo/src/ai/missions/transports/httpAiSelectionTransport.js"
   );
-  assert.equal(typeof response.tomorrowCapacityComment, "string");
-  assert.equal(response.safetyNote, null);
+
+  let called = false;
+  const originalSelectMissions = HttpAiSelectionTransport.selectMissions;
+
+  HttpAiSelectionTransport.selectMissions = async () => {
+    called = true;
+    return {
+      selections: [
+        {
+          missionId: "a",
+          reason: "http-default",
+          expectedImpact: 1,
+          confidence: "medium",
+        },
+      ],
+      tomorrowCapacityComment: "ok",
+      safetyNote: null,
+    };
+  };
+
+  try {
+    const client = createAiSelectionClient();
+    const response = await client.selectMissions({
+      candidates: [{ id: "a", title: "A" }],
+    });
+
+    assert.equal(called, true);
+    assert.equal(Array.isArray(response.selections), true);
+    assert.equal(response.selections[0].missionId, "a");
+  } finally {
+    HttpAiSelectionTransport.selectMissions = originalSelectMissions;
+  }
 });
 
 test("createAiSelectionClient supports injected transport", async () => {
@@ -201,4 +214,29 @@ test("createAiSelectionClient supports injected transport", async () => {
   const response = await client.selectMissions({ candidates: [{ id: "x", title: "X" }] });
 
   assert.deepEqual(response.selections.map((selection) => selection.missionId), ["x"]);
+});
+
+test("MockTransport regression: deterministic selection order is preserved when explicitly injected", async () => {
+  const { createAiSelectionClient } = await import("../native/HealthPilotExpo/src/ai/missions/aiSelectionClient.js");
+  const { MockTransport } = await import(
+    "../native/HealthPilotExpo/src/ai/missions/transports/mockTransport.js"
+  );
+
+  const client = createAiSelectionClient({
+    transport: MockTransport,
+  });
+
+  const response = await client.selectMissions({
+    candidates: [
+      { id: "first", title: "First" },
+      { id: "second", title: "Second" },
+      { id: "third", title: "Third" },
+      { id: "fourth", title: "Fourth" },
+    ],
+  });
+
+  assert.deepEqual(
+    response.selections.map((selection) => selection.missionId),
+    ["first", "second", "third"],
+  );
 });
