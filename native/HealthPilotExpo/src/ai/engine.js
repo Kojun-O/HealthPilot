@@ -1,8 +1,9 @@
-import { buildHealthPilotPrompt } from "./prompt";
-import { buildAiInput } from "./mockInput";
-import { generateBriefing } from "./generateBriefing";
-import { mockAiOutput } from "./mockOutput";
-import { callOpenAiForInsight } from "./openaiClient";
+import { buildHealthPilotPrompt } from "./prompt.js";
+import { buildAiInput } from "./mockInput.js";
+import { generateBriefing } from "./generateBriefing.js";
+import { mockAiOutput } from "./mockOutput.js";
+import { callOpenAiForInsight } from "./openaiClient.js";
+import { buildTodayMissions } from "./missions/buildTodayMissions.js";
 
 const USE_GPT = false;
 
@@ -19,6 +20,7 @@ export async function generateHealthPilotInsight(input) {
 
   return {
     ...mockAiOutput,
+    missions: buildTodayMissions(resolvedInput),
     aiBriefing: generateBriefing(resolvedInput.normalizedHealthData),
   };
 }

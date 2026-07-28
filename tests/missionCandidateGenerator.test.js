@@ -2,7 +2,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 async function loadModules() {
-  const [{ normalizeHealthData }, { generateInsights }, { generateMissionCandidates }, { selectMissions }] =
+  const [
+    { normalizeHealthData },
+    { generateInsights },
+    { generateMissionCandidates, generateFallbackMissionCandidates },
+    { selectMissions },
+  ] =
     await Promise.all([
       import("../native/HealthPilotExpo/src/ai/normalizeHealthData.js"),
       import("../native/HealthPilotExpo/src/ai/insights/generateInsights.js"),
@@ -14,6 +19,7 @@ async function loadModules() {
     normalizeHealthData,
     generateInsights,
     generateMissionCandidates,
+    generateFallbackMissionCandidates,
     selectMissions,
   };
 }
@@ -258,7 +264,7 @@ test("generateInsights output can be passed directly into generateMissionCandida
   ]);
 });
 
-test("pipeline creates two insights and two candidates, then selectMissions returns the first one", async () => {
+test("pipeline creates two insights and two candidates, then selectMissions returns both", async () => {
   const { normalizeHealthData, generateInsights, generateMissionCandidates, selectMissions } =
     await loadModules();
 
@@ -315,5 +321,27 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
       estimatedDurationMinutes: 15,
     },
   ]);
-  assert.deepEqual(selectedMissions, [candidates[0]]);
+  assert.deepEqual(selectedMissions, candidates);
+});
+
+test("generateFallbackMissionCandidates returns unique fallback definitions excluding existing ids", async () => {
+  const { generateFallbackMissionCandidates } = await loadModules();
+
+  const fallback = generateFallbackMissionCandidates([
+    {
+      id: "walk_after_dinner_10min",
+      sourceInsightIds: ["low_activity"],
+      type: "activity",
+      title: "夕食後に10分歩く",
+      rationale: "歩数が少なく、活動量が不足しています。",
+      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
+      estimatedDurationMinutes: 10,
+    },
+  ]);
+
+  assert.deepEqual(
+    fallback.map((candidate) => candidate.id),
+    ["sleep_before_2300", "no_caffeine_after_1500"],
+  );
+  assert.equal(new Set(fallback.map((candidate) => candidate.id)).size, fallback.length);
 });

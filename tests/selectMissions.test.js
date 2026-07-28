@@ -39,7 +39,7 @@ test("selectMissions returns one candidate when input has one candidate", async 
   assert.equal(selected[0], candidate);
 });
 
-test("selectMissions returns only the first candidate when input has multiple candidates", async () => {
+test("selectMissions returns candidates up to three when input has multiple candidates", async () => {
   const { selectMissions } = await loadModules();
   const first = {
     id: "rest_eyes_closed_15min",
@@ -56,10 +56,24 @@ test("selectMissions returns only the first candidate when input has multiple ca
     title: "コップ1杯の水を飲む",
     rationale: "水分不足の兆候があるため",
   };
+  const third = {
+    id: "sleep-before-2300",
+    sourceInsightIds: ["sleep_late"],
+    type: "sleep",
+    title: "23時までに就寝",
+    rationale: "睡眠リズムを整えるため",
+  };
+  const fourth = {
+    id: "no-caffeine-after-1500",
+    sourceInsightIds: ["sleep_light"],
+    type: "sleep",
+    title: "15時以降カフェインなし",
+    rationale: "入眠を妨げないため",
+  };
 
-  const selected = selectMissions([first, second]);
+  const selected = selectMissions([first, second, third, fourth]);
 
-  assert.deepEqual(selected, [first]);
+  assert.deepEqual(selected, [first, second, third]);
   assert.equal(selected[0], first);
 });
 
