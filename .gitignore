@@ -1,2 +1,4 @@
 server/.env
 node_modules
+.test-output.txt
+.full-test-output.log
