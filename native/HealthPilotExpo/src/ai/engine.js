@@ -20,7 +20,7 @@ export async function generateHealthPilotInsight(input) {
 
   return {
     ...mockAiOutput,
-    missions: buildTodayMissions(resolvedInput),
+    missions: await buildTodayMissions(resolvedInput),
     aiBriefing: generateBriefing(resolvedInput.normalizedHealthData),
   };
 }

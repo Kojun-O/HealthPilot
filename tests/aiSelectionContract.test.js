@@ -149,3 +149,56 @@ test("normalizeAiSelectionResponse returns null for invalid response values", as
   assert.equal(normalizeAiSelectionResponse({}, []), null);
   assert.equal(normalizeAiSelectionResponse({ selections: null }, []), null);
 });
+
+test("AISelectionClient.selectMissions returns a Promise and resolves AI selection response contract via default MockTransport", async () => {
+  const { AISelectionClient } = await import("../native/HealthPilotExpo/src/ai/missions/aiSelectionClient.js");
+
+  const responsePromise = AISelectionClient.selectMissions({
+    candidates: [
+      { id: "a", title: "A" },
+      { id: "b", title: "B" },
+      { id: "c", title: "C" },
+      { id: "d", title: "D" },
+    ],
+  });
+
+  assert.equal(typeof responsePromise?.then, "function");
+
+  const response = await responsePromise;
+
+  assert.equal(Array.isArray(response.selections), true);
+  assert.equal(response.selections.length, 3);
+  assert.deepEqual(
+    response.selections.map((selection) => selection.missionId),
+    ["a", "b", "c"],
+  );
+  assert.equal(typeof response.tomorrowCapacityComment, "string");
+  assert.equal(response.safetyNote, null);
+});
+
+test("createAiSelectionClient supports injected transport", async () => {
+  const { createAiSelectionClient } = await import("../native/HealthPilotExpo/src/ai/missions/aiSelectionClient.js");
+
+  const client = createAiSelectionClient({
+    transport: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "x",
+              reason: "from injected transport",
+              expectedImpact: 1,
+              confidence: "medium",
+            },
+          ],
+          tomorrowCapacityComment: "",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  const response = await client.selectMissions({ candidates: [{ id: "x", title: "X" }] });
+
+  assert.deepEqual(response.selections.map((selection) => selection.missionId), ["x"]);
+});

@@ -29,7 +29,7 @@ const FIXED_MOCK_AI_SELECTION_RESPONSE = Object.freeze({
 test("buildTodayMissions returns three missions via definition candidates and fallback definitions", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     normalizedHealthData: {
       sleep: {
         mainSleep: {
@@ -79,7 +79,7 @@ test("buildTodayMissions returns three missions via definition candidates and fa
 test("buildTodayMissions returns three fallback missions when insights are empty", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     insights: [],
     normalizedHealthData: {},
   });
@@ -94,7 +94,7 @@ test("buildTodayMissions returns three fallback missions when insights are empty
 test("buildTodayMissions keeps unique top three when insights include three or more candidates", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     insights: [
       { id: "short_main_sleep", type: "short_main_sleep" },
       { id: "low_activity", type: "low_activity" },
@@ -112,12 +112,12 @@ test("buildTodayMissions keeps unique top three when insights include three or m
   assert.equal(new Set(missions.map((mission) => mission.definitionId)).size, missions.length);
 });
 
-test("buildTodayMissions sends AI selection request contract and applies injected mock selections", async () => {
+test("buildTodayMissions sends AI selection request contract and applies injected client selections", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
   let capturedRequest = null;
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     date: "2026-07-28",
     health: {
       mainSleep: {
@@ -139,9 +139,11 @@ test("buildTodayMissions sends AI selection request contract and applies injecte
       { id: "low_activity", type: "low_activity" },
     ],
     normalizedHealthData: {},
-    aiSelectionResponse: (request) => {
-      capturedRequest = request;
-      return FIXED_MOCK_AI_SELECTION_RESPONSE;
+    aiSelectionClient: {
+      selectMissions(request) {
+        capturedRequest = request;
+        return FIXED_MOCK_AI_SELECTION_RESPONSE;
+      },
     },
   });
 
@@ -177,10 +179,10 @@ test("buildTodayMissions sends AI selection request contract and applies injecte
   );
 });
 
-test("buildTodayMissions uses local selection when aiSelectionResponse is not provided", async () => {
+test("buildTodayMissions uses default AISelectionClient with deterministic candidate-order selection", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     insights: [
       { id: "short_main_sleep", type: "short_main_sleep" },
       { id: "low_activity", type: "low_activity" },
@@ -194,22 +196,171 @@ test("buildTodayMissions uses local selection when aiSelectionResponse is not pr
   );
 });
 
-test("buildTodayMissions falls back to local selection when AI selection response throws", async () => {
+test("buildTodayMissions falls back to local selection when AISelectionClient throws", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
-  const missions = buildTodayMissions({
+  const missions = await buildTodayMissions({
     insights: [
       { id: "short_main_sleep", type: "short_main_sleep" },
       { id: "low_activity", type: "low_activity" },
     ],
     normalizedHealthData: {},
-    aiSelectionResponse: () => {
-      throw new Error("mock ai failure");
+    aiSelectionClient: {
+      selectMissions() {
+        throw new Error("mock ai failure");
+      },
     },
   });
 
   assert.deepEqual(
     missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions falls back to local selection when AISelectionClient rejects", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return Promise.reject(new Error("mock ai rejection"));
+      },
+    },
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions falls back to local selection when AI response is invalid", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return { invalid: true };
+      },
+    },
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions falls back to local selection when normalized valid selections are zero", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "missing_candidate_id",
+              reason: "invalid id",
+              expectedImpact: 1,
+              confidence: "high",
+            },
+          ],
+          tomorrowCapacityComment: "",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions pads to three missions when AI returns one or two valid selections", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missionsFromTwo = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "walk_15min",
+              reason: "first",
+              expectedImpact: 1,
+              confidence: "high",
+            },
+            {
+              missionId: "rest_eyes_closed_15min",
+              reason: "second",
+              expectedImpact: 1,
+              confidence: "medium",
+            },
+          ],
+          tomorrowCapacityComment: "",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  assert.equal(missionsFromTwo.length, 3);
+  assert.deepEqual(
+    missionsFromTwo.map((mission) => mission.definitionId),
+    ["walk_15min", "rest_eyes_closed_15min", "sleep_before_2300"],
+  );
+
+  const missionsFromOne = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "rest_eyes_closed_15min",
+              reason: "only one",
+              expectedImpact: 1,
+              confidence: "high",
+            },
+          ],
+          tomorrowCapacityComment: "",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  assert.equal(missionsFromOne.length, 3);
+  assert.deepEqual(
+    missionsFromOne.map((mission) => mission.definitionId),
     ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
   );
 });

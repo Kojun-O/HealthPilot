@@ -3,6 +3,7 @@ import {
   generateFallbackMissionCandidates,
   generateMissionCandidates,
 } from "./generateMissionCandidates.js";
+import { AISelectionClient } from "./aiSelectionClient.js";
 import { buildAiSelectionRequest } from "./buildAiSelectionRequest.js";
 import { selectMissions } from "./selectMissions.js";
 
@@ -40,18 +41,12 @@ function resolveInsights(input) {
   return generateInsights(input?.normalizedHealthData ?? {});
 }
 
-function hasAiSelectionResponse(input) {
-  return Object.prototype.hasOwnProperty.call(input ?? {}, "aiSelectionResponse");
-}
-
-function resolveAiSelectionResponse(input, request) {
-  const aiSelectionResponse = input?.aiSelectionResponse;
-
-  if (typeof aiSelectionResponse === "function") {
-    return aiSelectionResponse(request);
+function resolveAiSelectionClient(input) {
+  if (input?.aiSelectionClient && typeof input.aiSelectionClient.selectMissions === "function") {
+    return input.aiSelectionClient;
   }
 
-  return aiSelectionResponse;
+  return AISelectionClient;
 }
 
 function toTodayMission(candidate) {
@@ -72,7 +67,7 @@ function toTodayMission(candidate) {
   };
 }
 
-export function buildTodayMissions(input) {
+export async function buildTodayMissions(input) {
   const insights = resolveInsights(input);
   const candidates = generateMissionCandidates(insights);
   const fallbackCandidates = generateFallbackMissionCandidates(
@@ -80,13 +75,7 @@ export function buildTodayMissions(input) {
     MAX_TODAY_MISSIONS,
   );
   const allCandidates = [...candidates, ...fallbackCandidates];
-
-  if (!hasAiSelectionResponse(input)) {
-    return selectMissions(allCandidates)
-      .map(toTodayMission)
-      .filter(Boolean)
-      .slice(0, MAX_TODAY_MISSIONS);
-  }
+  const aiSelectionClient = resolveAiSelectionClient(input);
 
   let aiSelectionResponse = null;
 
@@ -99,7 +88,7 @@ export function buildTodayMissions(input) {
       insights,
       candidates: allCandidates,
     });
-    aiSelectionResponse = resolveAiSelectionResponse(input, aiSelectionRequest);
+    aiSelectionResponse = await aiSelectionClient.selectMissions(aiSelectionRequest);
   } catch {
     aiSelectionResponse = null;
   }
