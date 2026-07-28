@@ -173,3 +173,157 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
     "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
   );
 });
+
+test("selectMissions applies AI selections when valid", async () => {
+  const { selectMissions } = await loadModules();
+
+  const candidates = [
+    {
+      id: "rest_eyes_closed_15min",
+      sourceInsightIds: ["short_main_sleep"],
+      type: "rest",
+      title: "15分、目を閉じて休む",
+      rationale: "昨夜の主睡眠が7時間未満だったため",
+    },
+    {
+      id: "walk_15min",
+      sourceInsightIds: ["low_activity"],
+      type: "activity",
+      title: "15分歩く",
+      rationale: "歩数が少なく、活動量が不足しています。",
+    },
+    {
+      id: "sleep_before_2300",
+      sourceInsightIds: [],
+      type: "sleep",
+      title: "23:00までに就寝",
+      rationale: "明日の回復に向けて、今夜の睡眠時間を確保するため",
+    },
+  ];
+
+  const selected = selectMissions(candidates, {
+    aiSelectionResponse: {
+      selections: [
+        {
+          missionId: "walk_15min",
+          reason: "最初に軽い活動を優先",
+          expectedImpact: 1,
+          confidence: "high",
+        },
+        {
+          missionId: "rest_eyes_closed_15min",
+          reason: "回復行動を次に優先",
+          expectedImpact: 1,
+          confidence: "medium",
+        },
+      ],
+      tomorrowCapacityComment: "",
+      safetyNote: null,
+    },
+  });
+
+  assert.deepEqual(
+    selected.map((candidate) => candidate.id),
+    ["walk_15min", "rest_eyes_closed_15min", "sleep_before_2300"],
+  );
+});
+
+test("selectMissions filters invalid and duplicate AI selections and limits to three", async () => {
+  const { selectMissions } = await loadModules();
+
+  const candidates = [
+    { id: "a", title: "A" },
+    { id: "b", title: "B" },
+    { id: "c", title: "C" },
+    { id: "d", title: "D" },
+  ];
+
+  const selected = selectMissions(candidates, {
+    aiSelectionResponse: {
+      selections: [
+        {
+          missionId: "x",
+          reason: "存在しないID",
+          expectedImpact: 1,
+          confidence: "high",
+        },
+        {
+          missionId: "b",
+          reason: "B",
+          expectedImpact: 1,
+          confidence: "high",
+        },
+        {
+          missionId: "b",
+          reason: "重複",
+          expectedImpact: 2,
+          confidence: "low",
+        },
+        {
+          missionId: "a",
+          reason: "A",
+          expectedImpact: 1,
+          confidence: "medium",
+        },
+        {
+          missionId: "c",
+          reason: "C",
+          expectedImpact: 1,
+          confidence: "medium",
+        },
+        {
+          missionId: "d",
+          reason: "上限超過",
+          expectedImpact: 1,
+          confidence: "medium",
+        },
+      ],
+      tomorrowCapacityComment: "",
+      safetyNote: null,
+    },
+  });
+
+  assert.deepEqual(
+    selected.map((candidate) => candidate.id),
+    ["b", "a", "c"],
+  );
+});
+
+test("selectMissions falls back to local selection when AI response is invalid or empty", async () => {
+  const { selectMissions } = await loadModules();
+
+  const candidates = [
+    { id: "first", title: "First" },
+    { id: "second", title: "Second" },
+    { id: "third", title: "Third" },
+    { id: "fourth", title: "Fourth" },
+  ];
+
+  assert.deepEqual(
+    selectMissions(candidates, { aiSelectionResponse: null }).map((candidate) => candidate.id),
+    ["first", "second", "third"],
+  );
+  assert.deepEqual(
+    selectMissions(candidates, {
+      aiSelectionResponse: {
+        selections: [],
+      },
+    }).map((candidate) => candidate.id),
+    ["first", "second", "third"],
+  );
+  assert.deepEqual(
+    selectMissions(candidates, {
+      aiSelectionResponse: {
+        selections: [
+          {
+            missionId: "missing-id",
+            reason: "",
+            expectedImpact: 0,
+            confidence: "medium",
+          },
+        ],
+      },
+    }).map((candidate) => candidate.id),
+    ["first", "second", "third"],
+  );
+});

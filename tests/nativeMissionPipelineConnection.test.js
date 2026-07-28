@@ -1,6 +1,31 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const FIXED_MOCK_AI_SELECTION_RESPONSE = Object.freeze({
+  selections: [
+    {
+      missionId: "rest_eyes_closed_15min",
+      reason: "睡眠不足の影響を和らげるために、短時間で実行できる回復行動を優先します。",
+      expectedImpact: 1,
+      confidence: "high",
+    },
+    {
+      missionId: "walk_15min",
+      reason: "活動量の不足があるため、短時間で実行可能な歩行を優先します。",
+      expectedImpact: 1,
+      confidence: "medium",
+    },
+    {
+      missionId: "sleep_before_2300",
+      reason: "明日の回復の土台づくりとして就寝時刻の安定を優先します。",
+      expectedImpact: 1,
+      confidence: "medium",
+    },
+  ],
+  tomorrowCapacityComment: "回復行動と就寝行動を組み合わせることで、明日のCapacity維持を狙います。",
+  safetyNote: null,
+});
+
 test("buildTodayMissions returns three missions via definition candidates and fallback definitions", async () => {
   const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
 
@@ -85,4 +110,106 @@ test("buildTodayMissions keeps unique top three when insights include three or m
     ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
   );
   assert.equal(new Set(missions.map((mission) => mission.definitionId)).size, missions.length);
+});
+
+test("buildTodayMissions sends AI selection request contract and applies injected mock selections", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  let capturedRequest = null;
+
+  const missions = buildTodayMissions({
+    date: "2026-07-28",
+    health: {
+      mainSleep: {
+        durationMinutes: 390,
+      },
+      steps: 3000,
+    },
+    checkIn: {
+      energy: 2,
+      focus: 3,
+      stress: 2,
+      mood: 3,
+    },
+    context: {
+      freeText: "午後に集中が切れやすい",
+    },
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionResponse: (request) => {
+      capturedRequest = request;
+      return FIXED_MOCK_AI_SELECTION_RESPONSE;
+    },
+  });
+
+  assert.ok(capturedRequest);
+  assert.equal(capturedRequest.date, "2026-07-28");
+  assert.deepEqual(capturedRequest.health, {
+    mainSleep: {
+      durationMinutes: 390,
+    },
+    steps: 3000,
+  });
+  assert.deepEqual(capturedRequest.checkIn, {
+    energy: 2,
+    focus: 3,
+    stress: 2,
+    mood: 3,
+  });
+  assert.deepEqual(capturedRequest.context, {
+    freeText: "午後に集中が切れやすい",
+  });
+  assert.equal(Array.isArray(capturedRequest.insights), true);
+  assert.equal(capturedRequest.candidates.length >= 3, true);
+  assert.deepEqual(Object.keys(capturedRequest.candidates[0]), [
+    "id",
+    "title",
+    "why",
+    "sourceInsightIds",
+  ]);
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions uses local selection when aiSelectionResponse is not provided", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+});
+
+test("buildTodayMissions falls back to local selection when AI selection response throws", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionResponse: () => {
+      throw new Error("mock ai failure");
+    },
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
 });
