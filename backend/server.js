@@ -1,12 +1,20 @@
 import http from "node:http";
 import { fileURLToPath } from "node:url";
-import { buildFixedAiSelectionResponse, isValidAiSelectionRequest } from "./missionSelectionService.js";
+import { createMissionSelectionService } from "./missionSelectionService.js";
+import { isValidAiSelectionRequest } from "./aiSelectionRequestValidator.js";
+import { createFixedAiProvider } from "./ai/providers/fixedAiProvider.js";
 
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 const DEFAULT_PORT = Number(process.env.PORT || 8787);
 const DEFAULT_HOST = process.env.HOST || "0.0.0.0";
 
 export const BACKEND_LISTEN_HOST = DEFAULT_HOST;
+
+function createDefaultMissionSelectionService() {
+  return createMissionSelectionService({
+    provider: createFixedAiProvider(),
+  });
+}
 
 function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Origin", "*");
@@ -37,7 +45,7 @@ async function readJsonBody(request) {
   return JSON.parse(rawBody);
 }
 
-async function handleMissionSelection(request, response) {
+async function handleMissionSelection(request, response, missionSelectionService) {
   try {
     // Dev signal for request arrival without logging health payload content.
     console.info("Backend request received");
@@ -50,8 +58,8 @@ async function handleMissionSelection(request, response) {
       return;
     }
 
-    const fixedResponse = buildFixedAiSelectionResponse(body);
-    writeJson(response, 200, fixedResponse);
+    const aiSelectionResponse = await missionSelectionService.selectMissions(body);
+    writeJson(response, 200, aiSelectionResponse);
   } catch (error) {
     if (error instanceof SyntaxError) {
       writeJson(response, 400, {
@@ -66,7 +74,7 @@ async function handleMissionSelection(request, response) {
   }
 }
 
-export function createBackendServer() {
+export function createBackendServer({ missionSelectionService = createDefaultMissionSelectionService() } = {}) {
   return http.createServer(async (request, response) => {
     const requestUrl = new URL(request.url || "/", "http://localhost");
 
@@ -78,7 +86,7 @@ export function createBackendServer() {
     }
 
     if (requestUrl.pathname === "/ai/mission-selection" && request.method === "POST") {
-      await handleMissionSelection(request, response);
+      await handleMissionSelection(request, response, missionSelectionService);
       return;
     }
 

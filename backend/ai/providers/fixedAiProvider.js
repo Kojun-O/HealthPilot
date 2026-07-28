@@ -1,0 +1,56 @@
+import { createAiProviderContract } from "../aiProvider.js";
+
+const MAX_SELECTED_MISSIONS = 3;
+
+function toStringOrEmpty(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function selectDeterministicMissionIds(candidates) {
+  if (!Array.isArray(candidates)) {
+    return [];
+  }
+
+  const selectedMissionIds = [];
+  const seen = new Set();
+
+  for (const candidate of candidates) {
+    const missionId = toStringOrEmpty(candidate?.id);
+
+    if (!missionId || seen.has(missionId)) {
+      continue;
+    }
+
+    selectedMissionIds.push(missionId);
+    seen.add(missionId);
+
+    if (selectedMissionIds.length >= MAX_SELECTED_MISSIONS) {
+      break;
+    }
+  }
+
+  return selectedMissionIds;
+}
+
+export function buildFixedAiSelectionResponse(request) {
+  const selectedMissionIds = selectDeterministicMissionIds(request?.candidates);
+
+  return {
+    selections: selectedMissionIds.map((missionId) => ({
+      missionId,
+      reason: "固定レスポンスによる選択",
+      expectedImpact: 1,
+      confidence: "medium",
+    })),
+    tomorrowCapacityComment: "固定バックエンドレスポンス",
+    safetyNote: null,
+  };
+}
+
+export function createFixedAiProvider() {
+  return createAiProviderContract({
+    selectMissions(request) {
+      return buildFixedAiSelectionResponse(request);
+    },
+  });
+}
