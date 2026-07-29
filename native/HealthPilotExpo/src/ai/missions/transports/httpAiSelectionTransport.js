@@ -108,11 +108,6 @@ export function createHttpAiSelectionTransport(options = {}) {
           ...(timeoutController ? { signal: timeoutController.signal } : {}),
         });
 
-        console.info("MissionSelectionProbe fetch", {
-          status: response.status,
-          ok: response.ok,
-        });
-
         if (!response.ok) {
           throw buildHttpStatusError(response.status, response.headers?.get?.("x-request-id") || "");
         }
@@ -135,8 +130,6 @@ export function createHttpAiSelectionTransport(options = {}) {
             }
           }
 
-          console.info("MissionSelectionProbe responseText", responseText);
-
           let parsed;
           if (responseText) {
             parsed = toParsedPayload(responseText);
@@ -145,13 +138,6 @@ export function createHttpAiSelectionTransport(options = {}) {
           } else {
             parsed = undefined;
           }
-
-          console.info("MissionSelectionProbe parsed", {
-            typeofParsed: typeof parsed,
-            parsedKeys: parsed && typeof parsed === "object" && !Array.isArray(parsed)
-              ? Object.keys(parsed)
-              : [],
-          });
 
           // Dev signal for backend boundary success; payload body is intentionally not logged.
           console.info("BackendTransport success");

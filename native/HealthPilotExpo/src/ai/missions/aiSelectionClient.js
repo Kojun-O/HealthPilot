@@ -27,7 +27,6 @@ export function createAiSelectionClient(options = {}) {
     __transportName: transportName,
     __transportSourceFile: transportSourceFile,
     async selectMissions(request) {
-      console.info("MissionSelectionProbe ai-client-entry");
       return await transport.selectMissions(request);
     },
   };

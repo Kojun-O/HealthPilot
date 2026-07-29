@@ -61,12 +61,6 @@ function normalizeSelections(responseSelections, candidateIds) {
 }
 
 export function normalizeAiSelectionResponse(response, candidates) {
-  console.info("MissionSelectionProbe normalizeInput", {
-    inputKeys: response && typeof response === "object" && !Array.isArray(response)
-      ? Object.keys(response)
-      : [],
-  });
-
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return null;
   }
