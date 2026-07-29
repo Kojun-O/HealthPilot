@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { createMissionSelectionService } from "./missionSelectionService.js";
 import { isValidAiSelectionRequest } from "./aiSelectionRequestValidator.js";
 import { createFixedAiProvider } from "./ai/providers/fixedAiProvider.js";
+import { createOpenAiProvider } from "./ai/providers/openAiProvider.js";
+import { createOpenAiClient } from "./ai/providers/openai/openAiClient.js";
+import { getOpenAiModel, readOpenAiApiKey } from "./ai/providers/openai/openAiConfig.js";
 
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -11,6 +14,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
 const DEFAULT_PORT = Number(process.env.PORT || 8787);
 const DEFAULT_HOST = process.env.HOST || "0.0.0.0";
+const SUPPORTED_AI_PROVIDERS = new Set(["fixed", "openai"]);
 
 export const BACKEND_LISTEN_HOST = DEFAULT_HOST;
 
@@ -108,23 +112,74 @@ function createRateLimiter({ maxRequests = RATE_LIMIT_MAX_REQUESTS, windowMs = R
   };
 }
 
-function createDefaultMissionSelectionService() {
-  return createMissionSelectionService({
-    provider: createFixedAiProvider(),
-  });
+function readAiProviderFromEnv() {
+  const provider = safeTrimString(process.env.HEALTH_PILOT_AI_PROVIDER).toLowerCase();
+
+  if (!provider) {
+    return "fixed";
+  }
+
+  if (!SUPPORTED_AI_PROVIDERS.has(provider)) {
+    throw new Error("HEALTH_PILOT_AI_PROVIDER must be one of: fixed, openai");
+  }
+
+  return provider;
 }
 
-function toStatusMeta({ requestId, statusCode, startTimeMs }) {
+function readRequiredOpenAiModel() {
+  const model = safeTrimString(getOpenAiModel());
+
+  if (!model) {
+    throw new Error("OPENAI_MODEL must resolve to a non-empty value when HEALTH_PILOT_AI_PROVIDER=openai");
+  }
+
+  return model;
+}
+
+export function createConfiguredMissionSelectionService({ openAiClientFactory = createOpenAiClient } = {}) {
+  const providerName = readAiProviderFromEnv();
+
+  if (providerName === "fixed") {
+    return {
+      providerName,
+      missionSelectionService: createMissionSelectionService({
+        provider: createFixedAiProvider(),
+      }),
+    };
+  }
+
+  if (providerName === "openai") {
+    readOpenAiApiKey();
+    const model = readRequiredOpenAiModel();
+    const client = openAiClientFactory();
+
+    return {
+      providerName,
+      missionSelectionService: createMissionSelectionService({
+        provider: createOpenAiProvider({ client, model }),
+      }),
+    };
+  }
+
+  throw new Error("Unsupported HEALTH_PILOT_AI_PROVIDER configuration");
+}
+
+function toStatusMeta({ requestId, statusCode, startTimeMs, provider, failureCategory }) {
   return {
     requestId,
     status: statusCode,
     durationMs: Date.now() - startTimeMs,
+    provider,
+    failureCategory,
   };
 }
 
 function logBackendEvent(logger, eventName, meta) {
+  const providerSegment = meta.provider ? ` provider=${meta.provider}` : "";
+  const failureCategorySegment = meta.failureCategory ? ` failureCategory=${meta.failureCategory}` : "";
+
   logger.info(
-    `${eventName} requestId=${meta.requestId} status=${meta.status} durationMs=${meta.durationMs}`,
+    `${eventName}${providerSegment}${failureCategorySegment} requestId=${meta.requestId} status=${meta.status} durationMs=${meta.durationMs}`,
   );
 }
 
@@ -169,10 +224,11 @@ async function readJsonBody(request, maxBytes = MAX_JSON_BODY_BYTES) {
 }
 
 async function handleMissionSelection(request, response, context) {
-  const { missionSelectionService, backendToken, logger, rateLimiter, requestId, startTimeMs } = context;
+  const { missionSelectionService, backendToken, logger, rateLimiter, requestId, startTimeMs, providerName } = context;
 
   try {
     logBackendEvent(logger, "request received", toStatusMeta({
+      provider: providerName,
       requestId,
       statusCode: 0,
       startTimeMs,
@@ -192,6 +248,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "authentication failure", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 401,
         startTimeMs,
@@ -211,6 +268,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "authentication failure", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 401,
         startTimeMs,
@@ -230,6 +288,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "authentication failure", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 403,
         startTimeMs,
@@ -238,6 +297,7 @@ async function handleMissionSelection(request, response, context) {
     }
 
     logBackendEvent(logger, "authentication success", toStatusMeta({
+      provider: providerName,
       requestId,
       statusCode: 200,
       startTimeMs,
@@ -260,6 +320,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "request received", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 429,
         startTimeMs,
@@ -281,6 +342,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "request received", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 400,
         startTimeMs,
@@ -291,6 +353,7 @@ async function handleMissionSelection(request, response, context) {
     const aiSelectionResponse = await missionSelectionService.selectMissions(body);
     writeJson(response, 200, aiSelectionResponse, { requestId });
     logBackendEvent(logger, "provider success", toStatusMeta({
+      provider: providerName,
       requestId,
       statusCode: 200,
       startTimeMs,
@@ -308,6 +371,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "request received", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 413,
         startTimeMs,
@@ -327,6 +391,7 @@ async function handleMissionSelection(request, response, context) {
         },
       );
       logBackendEvent(logger, "request received", toStatusMeta({
+        provider: providerName,
         requestId,
         statusCode: 400,
         startTimeMs,
@@ -345,6 +410,8 @@ async function handleMissionSelection(request, response, context) {
       },
     );
     logBackendEvent(logger, "provider fallback", toStatusMeta({
+      provider: providerName,
+      failureCategory: typeof error?.kind === "string" ? error.kind : "internal",
       requestId,
       statusCode: 500,
       startTimeMs,
@@ -353,11 +420,25 @@ async function handleMissionSelection(request, response, context) {
 }
 
 export function createBackendServer({
-  missionSelectionService = createDefaultMissionSelectionService(),
   logger = console,
   rateLimiter = createRateLimiter(),
+  missionSelectionService,
+  openAiClientFactory = createOpenAiClient,
 } = {}) {
   const backendToken = readRequiredBackendTokenFromEnv();
+  const configured = missionSelectionService
+    ? {
+      providerName: "custom",
+      missionSelectionService,
+    }
+    : createConfiguredMissionSelectionService({ openAiClientFactory });
+
+  logBackendEvent(logger, "provider configured", {
+    provider: configured.providerName,
+    requestId: "startup",
+    status: 0,
+    durationMs: 0,
+  });
 
   return http.createServer(async (request, response) => {
     const requestId = randomUUID();
@@ -366,12 +447,13 @@ export function createBackendServer({
 
     if (requestUrl.pathname === "/ai/mission-selection" && request.method === "POST") {
       await handleMissionSelection(request, response, {
-        missionSelectionService,
+        missionSelectionService: configured.missionSelectionService,
         backendToken,
         logger,
         rateLimiter,
         requestId,
         startTimeMs,
+        providerName: configured.providerName,
       });
       return;
     }
@@ -387,6 +469,7 @@ export function createBackendServer({
       },
     );
     logBackendEvent(logger, "request received", toStatusMeta({
+      provider: configured.providerName,
       requestId,
       statusCode: 404,
       startTimeMs,
