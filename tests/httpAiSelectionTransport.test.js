@@ -51,6 +51,40 @@ test("HttpAiSelectionTransport returns backend JSON on success", async () => {
   assert.equal(Array.isArray(response.selections), true);
 });
 
+test("HttpAiSelectionTransport parses stringified JSON payloads", async () => {
+  const { createHttpAiSelectionTransport } = await import(
+    "../native/HealthPilotExpo/src/ai/missions/transports/httpAiSelectionTransport.js"
+  );
+
+  const transport = createHttpAiSelectionTransport({
+    missionSelectionUrl: "http://backend.local/ai/mission-selection",
+    backendAuthToken: TEST_BACKEND_TOKEN,
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return JSON.stringify({
+          selections: [
+            {
+              missionId: "rest_eyes_closed_15min",
+              reason: "ok",
+              expectedImpact: 1,
+              confidence: "medium",
+            },
+          ],
+          tomorrowCapacityComment: "ok",
+          safetyNote: null,
+        });
+      },
+    }),
+  });
+
+  const response = await transport.selectMissions({ candidates: [{ id: "rest_eyes_closed_15min", title: "A" }] });
+
+  assert.equal(Array.isArray(response.selections), true);
+  assert.equal(response.selections[0].missionId, "rest_eyes_closed_15min");
+});
+
 test("HttpAiSelectionTransport throws for HTTP 401", async () => {
   const { createHttpAiSelectionTransport } = await import(
     "../native/HealthPilotExpo/src/ai/missions/transports/httpAiSelectionTransport.js"

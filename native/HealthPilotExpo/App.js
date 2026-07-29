@@ -39,6 +39,12 @@ export default function App() {
 
   const safeInsight = insight && typeof insight === "object" ? insight : null;
   const missions = Array.isArray(safeInsight?.missions) ? safeInsight.missions : [];
+  const tomorrowCapacityComment =
+    typeof safeInsight?.tomorrowCapacityComment === "string" && safeInsight.tomorrowCapacityComment.trim()
+      ? safeInsight.tomorrowCapacityComment
+      : typeof safeInsight?.tomorrowCapacity?.reason === "string"
+        ? safeInsight.tomorrowCapacity.reason
+        : "";
   const baselineTomorrow =
     typeof safeInsight?.tomorrowCapacity?.baseline === "number"
     && Number.isFinite(safeInsight.tomorrowCapacity.baseline)
@@ -186,9 +192,9 @@ export default function App() {
           <Text style={styles.tomorrowValue}>
             {baselineTomorrow} → {projectedTomorrow} (+{completedImpact})
           </Text>
-          {safeInsight.tomorrowCapacity.reason ? (
+          {tomorrowCapacityComment ? (
             <Text numberOfLines={2} style={styles.tomorrowReason}>
-              {safeInsight.tomorrowCapacity.reason}
+              {tomorrowCapacityComment}
             </Text>
           ) : null}
           {lastUpdatedAt ? (

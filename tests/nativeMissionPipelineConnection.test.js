@@ -364,3 +364,47 @@ test("buildTodayMissions pads to three missions when AI returns one or two valid
     ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
   );
 });
+
+test("generateHealthPilotInsight keeps aiBriefing local and forwards backend tomorrowCapacityComment", async () => {
+  const { generateHealthPilotInsight } = await import("../native/HealthPilotExpo/src/ai/engine.js");
+
+  const insight = await generateHealthPilotInsight({
+    normalizedHealthData: {
+      sleep: {
+        mainSleep: {
+          durationMinutes: 390,
+        },
+      },
+      activity: {
+        steps: 3000,
+      },
+    },
+    health: {},
+    checkIn: {},
+    context: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "rest_eyes_closed_15min",
+              reason: "backend selection",
+              expectedImpact: 1,
+              confidence: "high",
+            },
+          ],
+          tomorrowCapacityComment: "backend tomorrow comment",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  assert.equal(insight.aiBriefing.title, "Good morning");
+  assert.equal(insight.aiBriefing.message, "今日は安定しています。いつも通りで大丈夫です。");
+  assert.deepEqual(
+    insight.missions.map((mission) => mission.definitionId),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
+  assert.equal(insight.tomorrowCapacityComment, "backend tomorrow comment");
+});

@@ -94,14 +94,61 @@ export async function buildTodayMissions(input) {
       insights,
       candidates: allCandidates,
     });
+
+    console.info("MissionSelectionProbe route", {
+      clientConstructorName: aiSelectionClient?.constructor?.name || "unknown",
+      clientSourceFile:
+        typeof aiSelectionClient?.__clientSourceFile === "string"
+          ? aiSelectionClient.__clientSourceFile
+          : "unknown",
+      transportConstructorName:
+        typeof aiSelectionClient?.__transportName === "string"
+          ? aiSelectionClient.__transportName
+          : "unknown",
+      transportSourceFile:
+        typeof aiSelectionClient?.__transportSourceFile === "string"
+          ? aiSelectionClient.__transportSourceFile
+          : "unknown",
+    });
+
+    console.info("MissionSelectionProbe client-call-start");
     aiSelectionResponse = await aiSelectionClient.selectMissions(aiSelectionRequest);
-  } catch {
+    console.info("MissionSelectionProbe client-call-result", {
+      resultType: typeof aiSelectionResponse,
+      resultIsNull: aiSelectionResponse === null,
+      resultKeys:
+        aiSelectionResponse && typeof aiSelectionResponse === "object"
+          ? Object.keys(aiSelectionResponse)
+          : [],
+    });
+  } catch (error) {
+    console.info("MissionSelectionProbe client-call-error", {
+      errorName: error?.name ?? "unknown",
+      errorMessage: error?.message ?? "unknown",
+    });
     aiSelectionResponse = null;
   }
+
+  console.info("MissionSelectionProbe buildTodayMissionsInput", {
+    aiSelectionResponseKeys:
+      aiSelectionResponse && typeof aiSelectionResponse === "object" && !Array.isArray(aiSelectionResponse)
+        ? Object.keys(aiSelectionResponse)
+        : [],
+  });
 
   const selectedMissions = selectMissions(allCandidates, {
     aiSelectionResponse,
   });
 
-  return selectedMissions.map(toTodayMission).filter(Boolean).slice(0, MAX_TODAY_MISSIONS);
+  const todayMissions = selectedMissions.map(toTodayMission).filter(Boolean).slice(0, MAX_TODAY_MISSIONS);
+
+  if (typeof selectedMissions.tomorrowCapacityComment === "string") {
+    Object.defineProperty(todayMissions, "tomorrowCapacityComment", {
+      value: selectedMissions.tomorrowCapacityComment,
+      enumerable: false,
+      configurable: true,
+    });
+  }
+
+  return todayMissions;
 }

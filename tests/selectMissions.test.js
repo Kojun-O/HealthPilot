@@ -327,3 +327,59 @@ test("selectMissions falls back to local selection when AI response is invalid o
     ["first", "second", "third"],
   );
 });
+
+test("selectMissions exposes backend tomorrowCapacityComment on valid selections", async () => {
+  const { selectMissions } = await loadModules();
+
+  const candidates = [
+    { id: "first", title: "First" },
+    { id: "second", title: "Second" },
+    { id: "third", title: "Third" },
+  ];
+
+  const selected = selectMissions(candidates, {
+    aiSelectionResponse: {
+      selections: [
+        {
+          missionId: "second",
+          reason: "prioritize second",
+          expectedImpact: 1,
+          confidence: "high",
+        },
+      ],
+      tomorrowCapacityComment: "backend tomorrow comment",
+      safetyNote: null,
+    },
+  });
+
+  assert.deepEqual(selected.map((candidate) => candidate.id), ["second", "first", "third"]);
+  assert.equal(selected.tomorrowCapacityComment, "backend tomorrow comment");
+  assert.equal(Object.prototype.propertyIsEnumerable.call(selected, "tomorrowCapacityComment"), false);
+});
+
+test("selectMissions accepts id alias for backend selections", async () => {
+  const { selectMissions } = await loadModules();
+
+  const candidates = [
+    { id: "first", title: "First" },
+    { id: "second", title: "Second" },
+    { id: "third", title: "Third" },
+  ];
+
+  const selected = selectMissions(candidates, {
+    aiSelectionResponse: {
+      selections: [
+        {
+          id: "second",
+          reason: "id alias",
+          expectedImpact: 1,
+          confidence: "high",
+        },
+      ],
+      tomorrowCapacityComment: "backend tomorrow comment",
+      safetyNote: null,
+    },
+  });
+
+  assert.deepEqual(selected.map((candidate) => candidate.id), ["second", "first", "third"]);
+});

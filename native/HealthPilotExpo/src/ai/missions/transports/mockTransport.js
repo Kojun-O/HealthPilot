@@ -1,4 +1,5 @@
 const MAX_SELECTED_MISSIONS = 3;
+const MOCK_TRANSPORT_SOURCE_FILE = import.meta.url;
 
 function toStringOrEmpty(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -31,6 +32,8 @@ function toUniqueMissionIds(candidates) {
 }
 
 export const MockTransport = {
+  __transportName: "MockTransport",
+  __sourceFile: MOCK_TRANSPORT_SOURCE_FILE,
   async selectMissions(request = {}) {
     const selectedMissionIds = toUniqueMissionIds(request?.candidates);
 

@@ -1,6 +1,7 @@
 import { getBackendAuthToken, getMissionSelectionUrl } from "./backendApiConfig.js";
 
-const DEFAULT_TIMEOUT_MS = 1500;
+const DEFAULT_TIMEOUT_MS = 0;
+const HTTP_AI_SELECTION_TRANSPORT_SOURCE_FILE = import.meta.url;
 
 function toFiniteTimeout(timeoutMs) {
   const numeric = Number(timeoutMs);
@@ -57,6 +58,18 @@ function buildHttpStatusError(status, requestId) {
   return httpError;
 }
 
+function toParsedPayload(payload) {
+  if (typeof payload !== "string") {
+    return payload;
+  }
+
+  if (!payload) {
+    return undefined;
+  }
+
+  return JSON.parse(payload);
+}
+
 export function createHttpAiSelectionTransport(options = {}) {
   const fetchImpl = typeof options.fetchImpl === "function" ? options.fetchImpl : globalThis.fetch;
   const timeoutMs = toFiniteTimeout(options.timeoutMs);
@@ -69,7 +82,7 @@ export function createHttpAiSelectionTransport(options = {}) {
     throw new Error("HTTP transport requires fetch implementation");
   }
 
-  if (typeof AbortControllerImpl !== "function") {
+  if (timeoutMs > 0 && typeof AbortControllerImpl !== "function") {
     throw new Error("HTTP transport requires AbortController implementation");
   }
 
@@ -78,8 +91,11 @@ export function createHttpAiSelectionTransport(options = {}) {
   }
 
   return {
+    __transportName: "HttpAiSelectionTransport",
+    __sourceFile: HTTP_AI_SELECTION_TRANSPORT_SOURCE_FILE,
     async selectMissions(request) {
-      const timeoutController = createTimeoutController(timeoutMs, AbortControllerImpl);
+      const timeoutController =
+        timeoutMs > 0 ? createTimeoutController(timeoutMs, AbortControllerImpl) : null;
 
       try {
         const response = await fetchImpl(missionSelectionUrl, {
@@ -89,7 +105,12 @@ export function createHttpAiSelectionTransport(options = {}) {
             Authorization: `Bearer ${backendAuthToken}`,
           },
           body: JSON.stringify(request ?? {}),
-          signal: timeoutController.signal,
+          ...(timeoutController ? { signal: timeoutController.signal } : {}),
+        });
+
+        console.info("MissionSelectionProbe fetch", {
+          status: response.status,
+          ok: response.ok,
         });
 
         if (!response.ok) {
@@ -97,10 +118,44 @@ export function createHttpAiSelectionTransport(options = {}) {
         }
 
         try {
-          const payload = await response.json();
+          let responseText = "";
+
+          if (typeof response.clone === "function") {
+            try {
+              const cloned = response.clone();
+              responseText = typeof cloned.text === "function" ? await cloned.text() : "";
+            } catch {
+              responseText = "";
+            }
+          } else if (typeof response.text === "function") {
+            try {
+              responseText = await response.text();
+            } catch {
+              responseText = "";
+            }
+          }
+
+          console.info("MissionSelectionProbe responseText", responseText);
+
+          let parsed;
+          if (responseText) {
+            parsed = toParsedPayload(responseText);
+          } else if (typeof response.json === "function") {
+            parsed = toParsedPayload(await response.json());
+          } else {
+            parsed = undefined;
+          }
+
+          console.info("MissionSelectionProbe parsed", {
+            typeofParsed: typeof parsed,
+            parsedKeys: parsed && typeof parsed === "object" && !Array.isArray(parsed)
+              ? Object.keys(parsed)
+              : [],
+          });
+
           // Dev signal for backend boundary success; payload body is intentionally not logged.
           console.info("BackendTransport success");
-          return payload;
+          return parsed;
         } catch {
           throw new Error("Backend transport failed to parse JSON response");
         }
@@ -111,13 +166,15 @@ export function createHttpAiSelectionTransport(options = {}) {
 
         throw error;
       } finally {
-        timeoutController.clear();
+        timeoutController?.clear();
       }
     },
   };
 }
 
 export const HttpAiSelectionTransport = {
+  __transportName: "HttpAiSelectionTransport",
+  __sourceFile: HTTP_AI_SELECTION_TRANSPORT_SOURCE_FILE,
   async selectMissions(request) {
     const transport = createHttpAiSelectionTransport();
     return transport.selectMissions(request);

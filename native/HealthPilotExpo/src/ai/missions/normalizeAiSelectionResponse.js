@@ -36,7 +36,7 @@ function normalizeSelections(responseSelections, candidateIds) {
   const selectedIdSet = new Set();
 
   for (const selection of responseSelections) {
-    const missionId = toStringOrEmpty(selection?.missionId);
+    const missionId = toStringOrEmpty(selection?.missionId) || toStringOrEmpty(selection?.id);
 
     if (!missionId || selectedIdSet.has(missionId) || !candidateIds.has(missionId)) {
       continue;
@@ -61,6 +61,12 @@ function normalizeSelections(responseSelections, candidateIds) {
 }
 
 export function normalizeAiSelectionResponse(response, candidates) {
+  console.info("MissionSelectionProbe normalizeInput", {
+    inputKeys: response && typeof response === "object" && !Array.isArray(response)
+      ? Object.keys(response)
+      : [],
+  });
+
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return null;
   }

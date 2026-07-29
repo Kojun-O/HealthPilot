@@ -4,7 +4,11 @@ const MAX_SELECTED_MISSIONS = 3;
 
 function logBackendTransportFallback() {
   // Dev signal only; no health payload is included.
-  console.info("BackendTransport fallback");
+  console.info("BackendTransport fallback", "reason=unknown");
+}
+
+function logBackendTransportFallbackReason(reason) {
+  console.info("BackendTransport fallback", `reason=${reason}`);
 }
 
 function toCandidateId(candidate) {
@@ -73,6 +77,16 @@ function selectMissionsByIds(candidates, selectedMissionIds) {
   return selected;
 }
 
+function attachTomorrowCapacityComment(selectedMissions, comment) {
+  Object.defineProperty(selectedMissions, "tomorrowCapacityComment", {
+    value: typeof comment === "string" ? comment : "",
+    enumerable: false,
+    configurable: true,
+  });
+
+  return selectedMissions;
+}
+
 export function selectMissions(candidates, options = {}) {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return [];
@@ -91,7 +105,7 @@ export function selectMissions(candidates, options = {}) {
     );
 
     if (!normalizedAiSelectionResponse) {
-      logBackendTransportFallback();
+      logBackendTransportFallbackReason("normalize-invalid-response");
       return localSelection;
     }
 
@@ -100,13 +114,16 @@ export function selectMissions(candidates, options = {}) {
     );
 
     if (selectedMissionIds.length === 0) {
-      logBackendTransportFallback();
+      logBackendTransportFallbackReason("zero-valid-mission-ids");
       return localSelection;
     }
 
-    return selectMissionsByIds(candidates, selectedMissionIds);
+    return attachTomorrowCapacityComment(
+      selectMissionsByIds(candidates, selectedMissionIds),
+      normalizedAiSelectionResponse.tomorrowCapacityComment,
+    );
   } catch {
-    logBackendTransportFallback();
+    logBackendTransportFallbackReason("exception");
     return localSelection;
   }
 }
