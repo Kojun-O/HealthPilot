@@ -1,4 +1,4 @@
-import { getMissionSelectionUrl } from "./backendApiConfig.js";
+import { getBackendAuthToken, getMissionSelectionUrl } from "./backendApiConfig.js";
 
 const DEFAULT_TIMEOUT_MS = 1500;
 
@@ -34,11 +34,36 @@ function isAbortError(error) {
   return error.name === "AbortError";
 }
 
+function buildHttpStatusError(status, requestId) {
+  let message = `Backend transport HTTP ${status}`;
+
+  if (status === 401) {
+    message = "Backend transport unauthorized (HTTP 401)";
+  } else if (status === 403) {
+    message = "Backend transport forbidden (HTTP 403)";
+  } else if (status === 429) {
+    message = "Backend transport rate limited (HTTP 429)";
+  } else if (status === 413) {
+    message = "Backend transport payload too large (HTTP 413)";
+  }
+
+  if (requestId) {
+    message = `${message}; requestId=${requestId}`;
+  }
+
+  const httpError = new Error(message);
+  httpError.status = status;
+  httpError.requestId = requestId || null;
+  return httpError;
+}
+
 export function createHttpAiSelectionTransport(options = {}) {
   const fetchImpl = typeof options.fetchImpl === "function" ? options.fetchImpl : globalThis.fetch;
   const timeoutMs = toFiniteTimeout(options.timeoutMs);
   const AbortControllerImpl = options.AbortControllerImpl || globalThis.AbortController;
   const missionSelectionUrl = options.missionSelectionUrl || getMissionSelectionUrl();
+  const backendAuthToken =
+    typeof options.backendAuthToken === "string" ? options.backendAuthToken.trim() : getBackendAuthToken();
 
   if (typeof fetchImpl !== "function") {
     throw new Error("HTTP transport requires fetch implementation");
@@ -46,6 +71,10 @@ export function createHttpAiSelectionTransport(options = {}) {
 
   if (typeof AbortControllerImpl !== "function") {
     throw new Error("HTTP transport requires AbortController implementation");
+  }
+
+  if (!backendAuthToken) {
+    throw new Error("HTTP transport requires backend auth token");
   }
 
   return {
@@ -57,15 +86,14 @@ export function createHttpAiSelectionTransport(options = {}) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${backendAuthToken}`,
           },
           body: JSON.stringify(request ?? {}),
           signal: timeoutController.signal,
         });
 
         if (!response.ok) {
-          const httpError = new Error(`Backend transport HTTP ${response.status}`);
-          httpError.status = response.status;
-          throw httpError;
+          throw buildHttpStatusError(response.status, response.headers?.get?.("x-request-id") || "");
         }
 
         try {
@@ -89,4 +117,9 @@ export function createHttpAiSelectionTransport(options = {}) {
   };
 }
 
-export const HttpAiSelectionTransport = createHttpAiSelectionTransport();
+export const HttpAiSelectionTransport = {
+  async selectMissions(request) {
+    const transport = createHttpAiSelectionTransport();
+    return transport.selectMissions(request);
+  },
+};

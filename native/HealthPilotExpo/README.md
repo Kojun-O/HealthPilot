@@ -39,3 +39,23 @@ npx expo start --dev-client
 - HealthKit access requires an iOS development build. Expo Go cannot load HealthKit native modules.
 - The app requests read-only HealthKit access for sleep, resting heart rate, heart rate variability, steps, and weight.
 - This sprint intentionally avoids broader UI or architecture changes.
+
+## Backend auth token setup (development only)
+
+Set backend access token before starting Expo dev client:
+
+```bash
+export EXPO_PUBLIC_HEALTH_PILOT_BACKEND_TOKEN="your-dev-backend-token"
+npx expo start --dev-client
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:EXPO_PUBLIC_HEALTH_PILOT_BACKEND_TOKEN = "your-dev-backend-token"
+npx.cmd expo start --dev-client
+```
+
+- This token authenticates app access to the local backend.
+- This is not an OpenAI API key.
+- Never place `OPENAI_API_KEY` in app code, Expo config, or client logs.

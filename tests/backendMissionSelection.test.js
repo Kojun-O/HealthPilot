@@ -1,6 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const TEST_BACKEND_TOKEN = "test-backend-token";
+process.env.HEALTH_PILOT_BACKEND_TOKEN = TEST_BACKEND_TOKEN;
+
+function createAuthHeaders() {
+  return {
+    Authorization: `Bearer ${TEST_BACKEND_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
 test("backend default listen host is 0.0.0.0 for LAN device access", async () => {
   const { BACKEND_LISTEN_HOST } = await import("../backend/server.js");
   assert.equal(BACKEND_LISTEN_HOST, "0.0.0.0");
@@ -28,9 +38,7 @@ test("backend mission selection returns up to 3 deterministic selections", async
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [
           { id: "a", title: "A" },
@@ -60,9 +68,7 @@ test("backend mission selection returns empty selections when candidates are emp
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [],
       }),
@@ -86,9 +92,7 @@ test("backend mission selection deduplicates duplicate mission IDs", async () =>
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [
           { id: "a", title: "A" },
@@ -118,9 +122,7 @@ test("backend mission selection returns 400 for invalid request", async () => {
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         invalid: true,
       }),
@@ -142,9 +144,7 @@ test("backend mission selection response contract matches Sprint 36 canonical se
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [{ id: "candidate-id", title: "Candidate" }],
       }),

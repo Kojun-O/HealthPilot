@@ -11,8 +11,7 @@ export async function generateHealthPilotInsight(input) {
   const resolvedInput = input ?? (await buildAiInput()).input;
   const prompt = buildHealthPilotPrompt(resolvedInput);
 
-  console.log("Health Pilot AI input:", resolvedInput);
-  console.log("Health Pilot prompt:", prompt);
+  console.info("Health Pilot AI insight generation started");
 
   if (USE_GPT) {
     return callOpenAiForInsight(prompt);

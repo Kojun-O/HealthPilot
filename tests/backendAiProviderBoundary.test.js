@@ -1,6 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const TEST_BACKEND_TOKEN = "test-backend-token";
+process.env.HEALTH_PILOT_BACKEND_TOKEN = TEST_BACKEND_TOKEN;
+
+function createAuthHeaders() {
+  return {
+    Authorization: `Bearer ${TEST_BACKEND_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
 async function startBackendServer(options = {}) {
   const { createBackendServer } = await import("../backend/server.js");
   const server = createBackendServer(options);
@@ -94,9 +104,7 @@ test("backend returns provider response on success", async () => {
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [{ id: "candidate-id", title: "Candidate" }],
       }),
@@ -125,9 +133,7 @@ test("backend returns 500 when provider throws", async () => {
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [{ id: "candidate-id", title: "Candidate" }],
       }),
@@ -148,9 +154,7 @@ test("backend default startup uses fixed AI provider", async () => {
   try {
     const response = await fetch(`${backend.baseUrl}/ai/mission-selection`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify({
         candidates: [{ id: "fixed-id", title: "Fixed" }],
       }),
