@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId";
-import { getTodayDateKey, loadDailyRecord, saveDailyRecord } from "../storage/dailyRecordStorage";
+import { shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking";
+import {
+  getNextDateKey,
+  getPreviousDateKey,
+  getTodayDateKey,
+  loadDailyRecord,
+  saveDailyRecord,
+} from "../storage/dailyRecordStorage";
 
 const DEFAULT_CHECK_IN_RATINGS = Object.freeze({
   condition: 3,
@@ -47,15 +54,42 @@ function buildMissionCompletionMap(missions, sourceCompletion) {
   }, {});
 }
 
+function toPresentedMissions(missions) {
+  if (!Array.isArray(missions)) {
+    return [];
+  }
+
+  return missions
+    .map((mission) => {
+      const id = getMissionStableId(mission);
+      const title = typeof mission?.title === "string" ? mission.title.trim() : "";
+
+      if (!id || !title) {
+        return null;
+      }
+
+      const expectedImpact = Number(mission?.expectedImpact);
+
+      return {
+        id,
+        title,
+        expectedImpact: Number.isFinite(expectedImpact) ? Math.max(0, Math.round(expectedImpact)) : 0,
+      };
+    })
+    .filter(Boolean);
+}
+
 export function useDailyRecord({ missions, baselineTomorrow }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
   const [missionCompletionSource, setMissionCompletionSource] = useState({});
   const [healthSnapshot, setHealthSnapshot] = useState(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState([]);
+  const [hasUserCheckInInput, setHasUserCheckInInput] = useState(false);
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey());
   const [isHydrated, setIsHydrated] = useState(false);
 
   const stableMissionIds = useMemo(() => getMissionStableIds(missions), [missions]);
+  const presentedMissions = useMemo(() => toPresentedMissions(missions), [missions]);
   const missionCompletion = useMemo(
     () => buildMissionCompletionMap(missions, missionCompletionSource),
     [missionCompletionSource, missions],
@@ -78,14 +112,16 @@ export function useDailyRecord({ missions, baselineTomorrow }) {
   }, [baselineTomorrow, completedImpact]);
   const tomorrowCapacityPrediction = useMemo(() => {
     const baseline = Number.isFinite(Number(baselineTomorrow)) ? Math.round(Number(baselineTomorrow)) : 0;
+    const targetDate = getNextDateKey(currentDateKey);
 
     return {
       baseline,
       projected: projectedTomorrow,
       completedImpact,
       delta: projectedTomorrow - baseline,
+      targetDate,
     };
-  }, [baselineTomorrow, completedImpact, projectedTomorrow]);
+  }, [baselineTomorrow, completedImpact, currentDateKey, projectedTomorrow]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -110,6 +146,7 @@ export function useDailyRecord({ missions, baselineTomorrow }) {
 
     async function hydrateDailyRecord() {
       setIsHydrated(false);
+      setHasUserCheckInInput(false);
       const record = await loadDailyRecord(currentDateKey);
 
       if (cancelled) {
@@ -143,25 +180,57 @@ export function useDailyRecord({ missions, baselineTomorrow }) {
       return;
     }
 
-    saveDailyRecord(currentDateKey, {
-      date: currentDateKey,
-      healthSnapshot,
-      checkIn: checkInRatings,
-      selectedMissionIds,
-      missionCompletion,
-      tomorrowCapacityPrediction,
-    });
+    let cancelled = false;
+
+    async function persistDailyRecord() {
+      await saveDailyRecord(currentDateKey, {
+        date: currentDateKey,
+        healthSnapshot,
+        checkIn: checkInRatings,
+        presentedMissions,
+        selectedMissionIds,
+        missionCompletion,
+        tomorrowCapacityPrediction,
+      });
+
+      const previousDateKey = getPreviousDateKey(currentDateKey);
+      const previousRecord = await loadDailyRecord(previousDateKey);
+
+      if (
+        cancelled
+        || !shouldPersistMorningOutcomeLink({ previousRecord, currentDateKey, hasUserCheckInInput })
+      ) {
+        return;
+      }
+
+      await saveDailyRecord(previousDateKey, {
+        ...previousRecord,
+        morningOutcome: {
+          sourceDate: currentDateKey,
+          checkIn: checkInRatings,
+        },
+      });
+    }
+
+    persistDailyRecord();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     checkInRatings,
     currentDateKey,
     healthSnapshot,
     isHydrated,
     missionCompletion,
+    presentedMissions,
     selectedMissionIds,
+    hasUserCheckInInput,
     tomorrowCapacityPrediction,
   ]);
 
   const updateCheckInRating = useCallback((key, value) => {
+    setHasUserCheckInInput(true);
     setCheckInRatings((previous) => ({
       ...previous,
       [key]: value,
