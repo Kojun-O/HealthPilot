@@ -1,4 +1,7 @@
-import { getBackendAuthToken, getMissionSelectionUrl } from "./backendApiConfig.js";
+import {
+  getBackendAuthToken,
+  getMissionSelectionUrl,
+} from "./backendApiConfig.js";
 
 const DEFAULT_TIMEOUT_MS = 0;
 const HTTP_AI_SELECTION_TRANSPORT_SOURCE_FILE = import.meta.url;
@@ -74,9 +77,10 @@ export function createHttpAiSelectionTransport(options = {}) {
   const fetchImpl = typeof options.fetchImpl === "function" ? options.fetchImpl : globalThis.fetch;
   const timeoutMs = toFiniteTimeout(options.timeoutMs);
   const AbortControllerImpl = options.AbortControllerImpl || globalThis.AbortController;
+  const optionToken = typeof options.backendAuthToken === "string" ? options.backendAuthToken.trim() : "";
   const missionSelectionUrl = options.missionSelectionUrl || getMissionSelectionUrl();
-  const backendAuthToken =
-    typeof options.backendAuthToken === "string" ? options.backendAuthToken.trim() : getBackendAuthToken();
+
+  const backendAuthToken = optionToken || getBackendAuthToken();
 
   if (typeof fetchImpl !== "function") {
     throw new Error("HTTP transport requires fetch implementation");
