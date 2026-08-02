@@ -50,6 +50,7 @@ export default function App() {
     && Number.isFinite(safeInsight.tomorrowCapacity.baseline)
       ? safeInsight.tomorrowCapacity.baseline
       : 0;
+  const actualCapacity = safeInsight?.todayCapacity;
 
   const {
     checkInRatings,
@@ -62,6 +63,7 @@ export default function App() {
   } = useDailyRecord({
     missions,
     baselineTomorrow,
+    actualCapacity,
   });
 
   useEffect(() => {

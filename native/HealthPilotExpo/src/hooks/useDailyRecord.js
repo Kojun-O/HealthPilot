@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId";
-import { shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking";
+import { buildMorningOutcome, shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking";
 import {
   getNextDateKey,
   getPreviousDateKey,
@@ -79,7 +79,7 @@ function toPresentedMissions(missions) {
     .filter(Boolean);
 }
 
-export function useDailyRecord({ missions, baselineTomorrow }) {
+export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
   const [missionCompletionSource, setMissionCompletionSource] = useState({});
   const [healthSnapshot, setHealthSnapshot] = useState(null);
@@ -203,12 +203,20 @@ export function useDailyRecord({ missions, baselineTomorrow }) {
         return;
       }
 
+      const morningOutcome = buildMorningOutcome({
+        currentDateKey,
+        checkInRatings,
+        actualCapacity,
+        previousRecord,
+      });
+
+      if (!morningOutcome) {
+        return;
+      }
+
       await saveDailyRecord(previousDateKey, {
         ...previousRecord,
-        morningOutcome: {
-          sourceDate: currentDateKey,
-          checkIn: checkInRatings,
-        },
+        morningOutcome,
       });
     }
 
@@ -219,6 +227,7 @@ export function useDailyRecord({ missions, baselineTomorrow }) {
     };
   }, [
     checkInRatings,
+    actualCapacity,
     currentDateKey,
     healthSnapshot,
     isHydrated,

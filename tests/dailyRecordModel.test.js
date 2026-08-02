@@ -80,6 +80,11 @@ test("normalizeDailyRecord keeps new presentedMissions and morningOutcome fields
           mentalSpace: 2,
           activity: 1,
         },
+        actualCapacity: 64,
+        predictedBaseline: 62,
+        predictedProjected: 66,
+        baselineError: 2,
+        projectedError: -2,
       },
     },
     "2026-08-03",
@@ -107,6 +112,48 @@ test("normalizeDailyRecord keeps new presentedMissions and morningOutcome fields
       mentalSpace: 2,
       activity: 1,
     },
+    actualCapacity: 64,
+    predictedBaseline: 62,
+    predictedProjected: 66,
+    baselineError: 2,
+    projectedError: -2,
+  });
+});
+
+test("normalizeDailyRecord keeps backward compatibility for legacy morningOutcome shape", async () => {
+  const { normalizeDailyRecord } = await loadModel();
+
+  const record = normalizeDailyRecord(
+    {
+      date: "2026-08-03",
+      morningOutcome: {
+        sourceDate: "2026-08-04",
+        checkIn: {
+          condition: 5,
+          sleep: 4,
+          focus: 3,
+          mentalSpace: 2,
+          activity: 1,
+        },
+      },
+    },
+    "2026-08-03",
+  );
+
+  assert.deepEqual(record.morningOutcome, {
+    sourceDate: "2026-08-04",
+    checkIn: {
+      condition: 5,
+      sleep: 4,
+      focus: 3,
+      mentalSpace: 2,
+      activity: 1,
+    },
+    actualCapacity: null,
+    predictedBaseline: null,
+    predictedProjected: null,
+    baselineError: null,
+    projectedError: null,
   });
 });
 

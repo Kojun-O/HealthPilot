@@ -86,6 +86,16 @@ function toNumber(value) {
   return Math.round(numeric);
 }
 
+function toOptionalNumber(value) {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  return Math.round(numeric);
+}
+
 function toRoundedPositiveNumberOrDefault(value, defaultValue = 0) {
   const numeric = Number(value);
 
@@ -150,9 +160,22 @@ export function normalizeMorningOutcome(value) {
     return null;
   }
 
+  const actualCapacity = toOptionalNumber(source.actualCapacity);
+  const predictedBaseline = toOptionalNumber(source.predictedBaseline);
+  const predictedProjected = toOptionalNumber(source.predictedProjected);
+
   return {
     sourceDate: toDateKey(source.sourceDate),
     checkIn: normalizeCheckIn(source.checkIn),
+    actualCapacity,
+    predictedBaseline,
+    predictedProjected,
+    baselineError: actualCapacity === null || predictedBaseline === null
+      ? null
+      : actualCapacity - predictedBaseline,
+    projectedError: actualCapacity === null || predictedProjected === null
+      ? null
+      : actualCapacity - predictedProjected,
   };
 }
 
