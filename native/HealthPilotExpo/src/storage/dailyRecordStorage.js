@@ -4,6 +4,7 @@ import {
   getPreviousDateKey,
   getTodayDateKey,
   normalizeDailyRecord,
+  resolveCheckInNoteForSave,
   toDateKey,
 } from "./dailyRecordModel";
 
@@ -40,7 +41,12 @@ export async function loadDailyRecord(dateKey = getTodayDateKey()) {
 
 export async function saveDailyRecord(dateKey, dailyRecord) {
   const safeDateKey = toDateKey(dateKey);
+  const existingRecord = await loadDailyRecord(safeDateKey);
   const normalized = normalizeDailyRecord(dailyRecord, safeDateKey);
+  normalized.checkInNote = resolveCheckInNoteForSave(
+    normalized.checkInNote,
+    existingRecord?.checkInNote,
+  );
   const key = getDailyRecordStorageKey(safeDateKey);
 
   try {

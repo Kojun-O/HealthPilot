@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
 import { AIBriefingCard } from "./src/components/AIBriefingCard";
@@ -54,12 +54,14 @@ export default function App() {
 
   const {
     checkInRatings,
+    checkInNoteText,
     completedImpact,
     isMissionCompleted,
     projectedTomorrow,
     setHealthSnapshot,
     toggleMissionCompletion,
     updateCheckInRating,
+    updateCheckInNoteText,
   } = useDailyRecord({
     missions,
     baselineTomorrow,
@@ -244,6 +246,17 @@ export default function App() {
                 </View>
               );
             })}
+            <Text style={styles.checkInNoteLabel}>気になることがあれば一言</Text>
+            <TextInput
+              style={styles.checkInNoteInput}
+              value={checkInNoteText}
+              onChangeText={updateCheckInNoteText}
+              placeholder="例：頭痛あり、寝不足感なし、仕事の不安が強い"
+              placeholderTextColor="#999"
+              multiline={true}
+              textAlignVertical="top"
+              accessibilityLabel="今日の調子メモ"
+            />
           </View>
         </View>
       </ScrollView>
@@ -363,6 +376,24 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: "#222",
+  },
+  checkInNoteLabel: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#666",
+  },
+  checkInNoteInput: {
+    marginTop: 6,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#222",
+    backgroundColor: "#fbfbfb",
   },
   tomorrowValue: {
     fontSize: 20,

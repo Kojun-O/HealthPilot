@@ -81,6 +81,7 @@ function toPresentedMissions(missions) {
 
 export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
+  const [checkInNoteText, setCheckInNoteText] = useState("");
   const [missionCompletionSource, setMissionCompletionSource] = useState({});
   const [healthSnapshot, setHealthSnapshot] = useState(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState([]);
@@ -154,6 +155,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       }
 
       setCheckInRatings(normalizeCheckInRatings(record?.checkIn ?? DEFAULT_CHECK_IN_RATINGS));
+      setCheckInNoteText(typeof record?.checkInNote?.text === "string" ? record.checkInNote.text : "");
       setMissionCompletionSource(record?.missionCompletion ?? {});
       setSelectedMissionIds(Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : []);
       setHealthSnapshot(record?.healthSnapshot ?? null);
@@ -187,6 +189,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
         date: currentDateKey,
         healthSnapshot,
         checkIn: checkInRatings,
+        checkInNote: checkInNoteText,
         presentedMissions,
         selectedMissionIds,
         missionCompletion,
@@ -227,6 +230,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     };
   }, [
     checkInRatings,
+    checkInNoteText,
     actualCapacity,
     currentDateKey,
     healthSnapshot,
@@ -244,6 +248,10 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       ...previous,
       [key]: value,
     }));
+  }, []);
+
+  const updateCheckInNoteText = useCallback((value) => {
+    setCheckInNoteText(typeof value === "string" ? value : "");
   }, []);
 
   const toggleMissionCompletion = useCallback((mission) => {
@@ -272,6 +280,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
 
   return {
     checkInRatings,
+    checkInNoteText,
     currentDateKey,
     completedImpact,
     healthSnapshot,
@@ -281,5 +290,6 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     setHealthSnapshot,
     toggleMissionCompletion,
     updateCheckInRating,
+    updateCheckInNoteText,
   };
 }

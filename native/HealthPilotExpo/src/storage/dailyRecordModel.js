@@ -106,6 +106,20 @@ function toRoundedPositiveNumberOrDefault(value, defaultValue = 0) {
   return Math.max(0, Math.round(numeric));
 }
 
+function toIsoStringOrNull(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
 export function normalizeCheckIn(value) {
   const source = value && typeof value === "object" ? value : {};
 
@@ -153,6 +167,62 @@ export function normalizePrediction(value, baseDateKey) {
   };
 }
 
+export function normalizeCheckInNote(value) {
+  const source = value && typeof value === "object" ? value : null;
+  const rawText = typeof value === "string"
+    ? value
+    : typeof source?.text === "string"
+      ? source.text
+      : "";
+
+  if (!rawText.trim()) {
+    return null;
+  }
+
+  const createdAt = toIsoStringOrNull(source?.createdAt);
+  const updatedAt = toIsoStringOrNull(source?.updatedAt);
+
+  return {
+    text: rawText,
+    createdAt: createdAt || updatedAt,
+    updatedAt: updatedAt || createdAt,
+  };
+}
+
+export function resolveCheckInNoteForSave(value, previousValue, nowIso = new Date().toISOString()) {
+  const next = normalizeCheckInNote(value);
+
+  if (!next) {
+    return null;
+  }
+
+  const previous = normalizeCheckInNote(previousValue);
+
+  if (!previous) {
+    return {
+      text: next.text,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+  }
+
+  const createdAt = previous.createdAt || previous.updatedAt || nowIso;
+
+  if (previous.text === next.text) {
+    return {
+      text: next.text,
+      createdAt,
+      updatedAt: previous.updatedAt || previous.createdAt || nowIso,
+    };
+  }
+
+  return {
+    text: next.text,
+    createdAt,
+    updatedAt: nowIso,
+  };
+}
+
 export function normalizeMorningOutcome(value) {
   const source = value && typeof value === "object" ? value : null;
 
@@ -193,6 +263,7 @@ export function normalizeDailyRecord(value, dateKey) {
     selectedMissionIds: toStringArray(source.selectedMissionIds),
     missionCompletion: toBooleanMap(source.missionCompletion),
     tomorrowCapacityPrediction: normalizePrediction(source.tomorrowCapacityPrediction, normalizedDate),
+    checkInNote: normalizeCheckInNote(source.checkInNote),
     morningOutcome: normalizeMorningOutcome(source.morningOutcome),
   };
 }

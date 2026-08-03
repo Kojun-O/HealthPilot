@@ -14,6 +14,11 @@ test("buildAiSelectionRequest returns minimum contract shape", async () => {
     checkIn: {
       energy: 3,
     },
+    checkInNote: {
+      text: "午後に不安感が強い",
+      createdAt: "2026-08-03T03:00:00.000Z",
+      updatedAt: "2026-08-03T03:15:00.000Z",
+    },
     context: {
       freeText: "今日は集中力が下がり気味",
     },
