@@ -1,19 +1,45 @@
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatLocalDateKey(date) {
+  return [
+    String(date.getFullYear()),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join("-");
+}
+
 function parseDateKey(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (typeof value !== "string") {
     return null;
   }
 
-  const date = new Date(`${value}T00:00:00.000Z`);
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+  if (
+    Number.isNaN(date.getTime())
+    || date.getFullYear() !== year
+    || date.getMonth() !== month - 1
+    || date.getDate() !== day
+  ) {
     return null;
   }
 
   return date;
 }
 
-export function getTodayDateKey() {
-  return new Date().toISOString().slice(0, 10);
+export function getTodayDateKey(now = new Date()) {
+  return formatLocalDateKey(now);
 }
 
 export function toDateKey(value) {
@@ -28,8 +54,8 @@ export function toDateKey(value) {
 
 function shiftDateKey(dateKey, offsetDays) {
   const parsed = parseDateKey(toDateKey(dateKey));
-  parsed.setUTCDate(parsed.getUTCDate() + offsetDays);
-  return parsed.toISOString().slice(0, 10);
+  parsed.setDate(parsed.getDate() + offsetDays);
+  return formatLocalDateKey(parsed);
 }
 
 export function getPreviousDateKey(dateKey) {

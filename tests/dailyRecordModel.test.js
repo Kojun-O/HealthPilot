@@ -171,8 +171,34 @@ test("normalizeDailyRecord keeps backward compatibility for legacy morningOutcom
 test("date helpers compute previous and next day keys across boundaries", async () => {
   const { getPreviousDateKey, getNextDateKey } = await loadModel();
 
+  assert.equal(getPreviousDateKey("2026-03-01"), "2026-02-28");
+  assert.equal(getNextDateKey("2026-08-31"), "2026-09-01");
   assert.equal(getPreviousDateKey("2026-01-01"), "2025-12-31");
   assert.equal(getNextDateKey("2026-12-31"), "2027-01-01");
+});
+
+test("getTodayDateKey returns local YYYY-MM-DD for early JST times", async () => {
+  const { getTodayDateKey } = await loadModel();
+
+  const justAfterMidnightJst = {
+    getFullYear: () => 2026,
+    getMonth: () => 7,
+    getDate: () => 4,
+    toISOString: () => {
+      throw new Error("getTodayDateKey must not use toISOString");
+    },
+  };
+  const beforeNineAmJst = {
+    getFullYear: () => 2026,
+    getMonth: () => 7,
+    getDate: () => 4,
+    toISOString: () => {
+      throw new Error("getTodayDateKey must not use toISOString");
+    },
+  };
+
+  assert.equal(getTodayDateKey(justAfterMidnightJst), "2026-08-04");
+  assert.equal(getTodayDateKey(beforeNineAmJst), "2026-08-04");
 });
 
 test("normalizeDailyRecord treats empty checkInNote text as null", async () => {
