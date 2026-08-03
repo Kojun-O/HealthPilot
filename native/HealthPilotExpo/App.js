@@ -56,6 +56,7 @@ export default function App() {
     checkInRatings,
     checkInNoteText,
     completedImpact,
+    currentDateKey,
     isMissionCompleted,
     projectedTomorrow,
     setHealthSnapshot,
@@ -67,6 +68,37 @@ export default function App() {
     baselineTomorrow,
     actualCapacity,
   });
+
+  const formatDisplayDate = useCallback((dateKey) => {
+    if (typeof dateKey !== "string") {
+      return "";
+    }
+
+    const match = dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (!match) {
+      return "";
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const localDate = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+    if (
+      Number.isNaN(localDate.getTime())
+      || localDate.getFullYear() !== year
+      || localDate.getMonth() !== month - 1
+      || localDate.getDate() !== day
+    ) {
+      return "";
+    }
+
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const weekday = weekdays[localDate.getDay()];
+
+    return `${year}年${month}月${day}日（${weekday}）`;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +165,13 @@ export default function App() {
         }
       >
         <Text style={styles.logo}>Health Pilot</Text>
+
+        <View style={styles.targetDateSection}>
+          <Text style={styles.targetDateText}>{formatDisplayDate(currentDateKey)}</Text>
+          {lastUpdatedAt ? (
+            <Text style={styles.topLastUpdated}>最終更新 {formatLocalTime(lastUpdatedAt)}</Text>
+          ) : null}
+        </View>
 
         <AIBriefingCard title={safeInsight.aiBriefing.title} message={safeInsight.aiBriefing.message} />
 
@@ -283,6 +322,20 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 12,
+  },
+  targetDateSection: {
+    marginBottom: 12,
+  },
+  targetDateText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+    lineHeight: 22,
+  },
+  topLastUpdated: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "#9a9a9a",
   },
   missionSection: {
     marginTop: 0,
