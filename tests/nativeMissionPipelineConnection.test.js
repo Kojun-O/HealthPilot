@@ -59,18 +59,18 @@ test("buildTodayMissions returns three missions via definition candidates and fa
     {
       definitionId: "sleep_before_2300",
       title: "23:00までに就寝",
-      expectedImpact: 1,
+      expectedImpact: 2,
       confidence: "Medium",
       why: "明日の回復に向けて、今夜の睡眠時間を確保するため",
-      sourceInsightIds: [],
+      sourceInsightIds: ["short_main_sleep"],
     },
     {
       definitionId: "walk_after_dinner_10min",
       title: "夕食後に10分歩く",
-      expectedImpact: 1,
+      expectedImpact: 2,
       confidence: "Medium",
       why: "軽い活動で今日のリズムを整えるため",
-      sourceInsightIds: [],
+      sourceInsightIds: ["short_main_sleep"],
     },
   ]);
   assert.equal(missions.length, 3);
@@ -363,6 +363,47 @@ test("buildTodayMissions pads to three missions when AI returns one or two valid
     missionsFromOne.map((mission) => mission.definitionId),
     ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
   );
+});
+
+test("buildTodayMissions keeps library expectedImpact even when AI returns different expectedImpact", async () => {
+  const { buildTodayMissions } = await import("../native/HealthPilotExpo/src/ai/missions/buildTodayMissions.js");
+
+  const missions = await buildTodayMissions({
+    insights: [
+      { id: "short_main_sleep", type: "short_main_sleep" },
+      { id: "low_activity", type: "low_activity" },
+    ],
+    normalizedHealthData: {},
+    aiSelectionClient: {
+      async selectMissions() {
+        return {
+          selections: [
+            {
+              missionId: "walk_15min",
+              reason: "ai first",
+              expectedImpact: 3,
+              confidence: "high",
+            },
+            {
+              missionId: "rest_eyes_closed_15min",
+              reason: "ai second",
+              expectedImpact: 3,
+              confidence: "high",
+            },
+          ],
+          tomorrowCapacityComment: "",
+          safetyNote: null,
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(
+    missions.map((mission) => mission.definitionId),
+    ["walk_15min", "rest_eyes_closed_15min", "sleep_before_2300"],
+  );
+  assert.equal(missions[0].expectedImpact, 1);
+  assert.equal(missions[1].expectedImpact, 1);
 });
 
 test("generateHealthPilotInsight keeps aiBriefing local and forwards backend tomorrowCapacityComment", async () => {

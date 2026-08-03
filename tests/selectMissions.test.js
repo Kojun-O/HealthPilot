@@ -152,26 +152,14 @@ test("selection pipeline returns moderate short sleep mission for 390-minute mai
       },
     },
   ]);
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["short_main_sleep"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
-  assert.equal(selectedMissions.length, 1);
+  assert.equal(candidates.length >= 5 && candidates.length <= 10, true);
+  assert.equal(candidates[0].id, "rest_eyes_closed_15min");
+  assert.equal(selectedMissions.length, 3);
   assert.equal(selectedMissions[0].id, "rest_eyes_closed_15min");
   assert.equal(selectedMissions[0].title, "15分、目を閉じて休む");
   assert.deepEqual(selectedMissions[0].sourceInsightIds, ["short_main_sleep"]);
   assert.equal(selectedMissions[0].rationale, "昨夜の主睡眠が7時間未満だったため");
-  assert.equal(
-    selectedMissions[0].evidenceSummary,
-    "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-  );
+  assert.equal(selectedMissions[0].expectedImpact, 1);
 });
 
 test("selectMissions applies AI selections when valid", async () => {

@@ -24,10 +24,14 @@ async function loadModules() {
   };
 }
 
-test("generateMissionCandidates returns one rest candidate for moderate short_main_sleep", async () => {
+function byId(candidates, id) {
+  return candidates.find((candidate) => candidate.id === id) || null;
+}
+
+test("generateMissionCandidates returns 5-10 related candidates for short_main_sleep", async () => {
   const { generateMissionCandidates } = await loadModules();
 
-  const insights = [
+  const candidates = generateMissionCandidates([
     {
       id: "short_main_sleep",
       type: "short_main_sleep",
@@ -37,51 +41,23 @@ test("generateMissionCandidates returns one rest candidate for moderate short_ma
         thresholdMinutes: 420,
       },
     },
-  ];
-
-  const candidates = generateMissionCandidates(insights);
-
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["short_main_sleep"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
-});
-
-test("generateMissionCandidates returns the same candidate for high short_main_sleep", async () => {
-  const { generateMissionCandidates } = await loadModules();
-
-  const candidates = generateMissionCandidates([
-    {
-      id: "short_main_sleep",
-      type: "short_main_sleep",
-      severity: "high",
-      evidence: {
-        durationMinutes: 350,
-        thresholdMinutes: 420,
-      },
-    },
   ]);
 
-  assert.equal(candidates.length, 1);
-  assert.deepEqual(candidates[0], {
-    id: "rest_eyes_closed_15min",
-    sourceInsightIds: ["short_main_sleep"],
-    type: "rest",
-    title: "15分、目を閉じて休む",
-    rationale: "昨夜の主睡眠が7時間未満だったため",
-    evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-    estimatedDurationMinutes: 15,
-  });
+  assert.equal(candidates.length >= 5 && candidates.length <= 10, true);
+  assert.deepEqual(
+    candidates.slice(0, 3).map((candidate) => candidate.id),
+    ["rest_eyes_closed_15min", "sleep_before_2300", "walk_after_dinner_10min"],
+  );
+
+  const rest = byId(candidates, "rest_eyes_closed_15min");
+  assert.ok(rest);
+  assert.equal(rest.type, "rest");
+  assert.equal(rest.expectedImpact, 1);
+  assert.equal(rest.estimatedDurationMinutes, 15);
+  assert.deepEqual(rest.sourceInsightIds, ["short_main_sleep"]);
 });
 
-test("generateMissionCandidates returns one activity candidate for low_activity", async () => {
+test("generateMissionCandidates returns 5-10 related candidates for low_activity", async () => {
   const { generateMissionCandidates } = await loadModules();
 
   const candidates = generateMissionCandidates([
@@ -96,31 +72,18 @@ test("generateMissionCandidates returns one activity candidate for low_activity"
     },
   ]);
 
-  assert.deepEqual(candidates, [
-    {
-      id: "walk_15min",
-      sourceInsightIds: ["low_activity"],
-      type: "activity",
-      title: "15分歩く",
-      rationale: "歩数が少なく、活動量が不足しています。",
-      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
-});
+  assert.equal(candidates.length >= 5 && candidates.length <= 10, true);
+  assert.deepEqual(
+    candidates.slice(0, 2).map((candidate) => candidate.id),
+    ["walk_15min", "walk_after_dinner_10min"],
+  );
 
-test("generateMissionCandidates does not return low_activity mission when low_activity insight is missing", async () => {
-  const { generateMissionCandidates } = await loadModules();
-
-  const candidates = generateMissionCandidates([
-    {
-      id: "short_main_sleep",
-      type: "short_main_sleep",
-      severity: "moderate",
-    },
-  ]);
-
-  assert.equal(candidates.some((candidate) => candidate.id === "walk_15min"), false);
+  const walk = byId(candidates, "walk_15min");
+  assert.ok(walk);
+  assert.equal(walk.type, "activity");
+  assert.equal(walk.expectedImpact, 1);
+  assert.equal(walk.estimatedDurationMinutes, 15);
+  assert.deepEqual(walk.sourceInsightIds, ["low_activity"]);
 });
 
 test("generateMissionCandidates ignores unsupported insights and unsafe inputs", async () => {
@@ -142,88 +105,74 @@ test("generateMissionCandidates ignores unsupported insights and unsafe inputs",
   );
 });
 
-test("generateMissionCandidates deduplicates identical mission candidates and keeps source insight ids", async () => {
-  const { generateMissionCandidates } = await loadModules();
-
-  const insights = [
-    { id: "sleep_a", type: "short_main_sleep", severity: "moderate" },
-    { id: "sleep_b", type: "short_main_sleep", severity: "high" },
-    { id: "sleep_a", type: "short_main_sleep", severity: "moderate" },
-  ];
-
-  const snapshot = JSON.parse(JSON.stringify(insights));
-  const candidates = generateMissionCandidates(insights);
-
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["sleep_a", "sleep_b"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
-  assert.deepEqual(insights, snapshot);
-  assert.deepEqual(insights[0], snapshot[0]);
-  assert.deepEqual(insights[1], snapshot[1]);
-  assert.deepEqual(insights[2], snapshot[2]);
-});
-
-test("generateMissionCandidates returns two candidates from short_main_sleep and low_activity", async () => {
+test("generateMissionCandidates deduplicates IDs and merges sourceInsightIds across insights", async () => {
   const { generateMissionCandidates } = await loadModules();
 
   const candidates = generateMissionCandidates([
-    {
-      id: "short_main_sleep",
-      type: "short_main_sleep",
-      severity: "moderate",
-      evidence: {
-        durationMinutes: 390,
-        thresholdMinutes: 420,
-      },
-    },
-    {
-      id: "low_activity",
-      type: "low_activity",
-      severity: "moderate",
-      evidence: {
-        stepCount: 3000,
-        thresholdSteps: 5000,
-      },
-    },
+    { id: "sleep_a", type: "short_main_sleep", severity: "moderate" },
+    { id: "activity_b", type: "low_activity", severity: "moderate" },
   ]);
 
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["short_main_sleep"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-    {
-      id: "walk_15min",
-      sourceInsightIds: ["low_activity"],
-      type: "activity",
-      title: "15分歩く",
-      rationale: "歩数が少なく、活動量が不足しています。",
-      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
+  assert.equal(candidates.length > 2, true);
+  assert.equal(new Set(candidates.map((candidate) => candidate.id)).size, candidates.length);
+
+  const shared = byId(candidates, "walk_after_dinner_10min");
+  assert.ok(shared);
+  assert.deepEqual(shared.sourceInsightIds, ["sleep_a", "activity_b"]);
+});
+
+test("generateMissionCandidates keeps candidate schema compatible and includes expectedImpact", async () => {
+  const { generateMissionCandidates } = await loadModules();
+
+  const candidates = generateMissionCandidates([
+    { id: "short_main_sleep", type: "short_main_sleep" },
+    { id: "low_activity", type: "low_activity" },
   ]);
-  assert.deepEqual(Object.keys(candidates[1]).sort(), [
+
+  const sample = byId(candidates, "walk_15min");
+  assert.ok(sample);
+  assert.deepEqual(Object.keys(sample).sort(), [
     "estimatedDurationMinutes",
-    "evidenceSummary",
+    "expectedImpact",
     "id",
     "rationale",
     "sourceInsightIds",
     "title",
     "type",
   ]);
+  assert.equal(Number.isInteger(sample.expectedImpact), true);
+  assert.equal(sample.expectedImpact >= 1 && sample.expectedImpact <= 3, true);
+});
+
+test("generateMissionCandidates preserves zero duration for constraint missions", async () => {
+  const { generateMissionCandidates } = await loadModules();
+
+  const candidates = generateMissionCandidates([
+    { id: "short_main_sleep", type: "short_main_sleep" },
+  ]);
+
+  const sleepBefore2300 = byId(candidates, "sleep_before_2300");
+  const noCaffeineAfter1500 = byId(candidates, "no_caffeine_after_1500");
+
+  assert.ok(sleepBefore2300);
+  assert.ok(noCaffeineAfter1500);
+  assert.equal(sleepBefore2300.estimatedDurationMinutes, 0);
+  assert.equal(noCaffeineAfter1500.estimatedDurationMinutes, 0);
+});
+
+test("generateMissionCandidates uses renamed low_activity mission ID", async () => {
+  const { generateMissionCandidates } = await loadModules();
+
+  const candidates = generateMissionCandidates([
+    { id: "low_activity", type: "low_activity" },
+  ]);
+
+  const march = byId(candidates, "march_in_place_5min_easy");
+  const oldStairs = byId(candidates, "stairs_5min_easy_pace");
+
+  assert.ok(march);
+  assert.equal(march.title, "その場で5分のやさしい足踏み");
+  assert.equal(oldStairs, null);
 });
 
 test("generateInsights output can be passed directly into generateMissionCandidates", async () => {
@@ -251,20 +200,11 @@ test("generateInsights output can be passed directly into generateMissionCandida
       },
     },
   ]);
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["short_main_sleep"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
+  assert.equal(candidates.length >= 5 && candidates.length <= 10, true);
+  assert.equal(candidates[0].id, "rest_eyes_closed_15min");
 });
 
-test("pipeline creates two insights and two candidates, then selectMissions returns both", async () => {
+test("pipeline keeps top-three selection compatible when two insights are present", async () => {
   const { normalizeHealthData, generateInsights, generateMissionCandidates, selectMissions } =
     await loadModules();
 
@@ -281,50 +221,13 @@ test("pipeline creates two insights and two candidates, then selectMissions retu
   const candidates = generateMissionCandidates(insights);
   const selectedMissions = selectMissions(candidates);
 
-  assert.deepEqual(insights, [
-    {
-      id: "short_main_sleep",
-      type: "short_main_sleep",
-      severity: "moderate",
-      evidence: {
-        durationMinutes: 390,
-        thresholdMinutes: 420,
-      },
-    },
-    {
-      id: "low_activity",
-      type: "low_activity",
-      severity: "moderate",
-      evidence: {
-        stepCount: 3000,
-        thresholdSteps: 5000,
-      },
-    },
-  ]);
-  assert.deepEqual(candidates, [
-    {
-      id: "rest_eyes_closed_15min",
-      sourceInsightIds: ["short_main_sleep"],
-      type: "rest",
-      title: "15分、目を閉じて休む",
-      rationale: "昨夜の主睡眠が7時間未満だったため",
-      evidenceSummary: "短時間の閉眼休息は、主観的な眠気や疲労感を軽減する可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-    {
-      id: "walk_15min",
-      sourceInsightIds: ["low_activity"],
-      type: "activity",
-      title: "15分歩く",
-      rationale: "歩数が少なく、活動量が不足しています。",
-      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
-      estimatedDurationMinutes: 15,
-    },
-  ]);
-  assert.deepEqual(selectedMissions, candidates);
+  assert.deepEqual(
+    selectedMissions.map((candidate) => candidate.id),
+    ["rest_eyes_closed_15min", "walk_15min", "sleep_before_2300"],
+  );
 });
 
-test("generateFallbackMissionCandidates returns unique fallback definitions excluding existing ids", async () => {
+test("generateFallbackMissionCandidates is sourced from library IDs and excludes existing", async () => {
   const { generateFallbackMissionCandidates } = await loadModules();
 
   const fallback = generateFallbackMissionCandidates([
@@ -333,8 +236,8 @@ test("generateFallbackMissionCandidates returns unique fallback definitions excl
       sourceInsightIds: ["low_activity"],
       type: "activity",
       title: "夕食後に10分歩く",
-      rationale: "歩数が少なく、活動量が不足しています。",
-      evidenceSummary: "短時間の軽い歩行は、覚醒感や気分、日中の活動性の改善に役立つ可能性があります。",
+      rationale: "軽い活動で今日のリズムを整えるため",
+      expectedImpact: 1,
       estimatedDurationMinutes: 10,
     },
   ]);
