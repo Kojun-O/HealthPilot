@@ -6,6 +6,7 @@ import {
   resolveDisplayedMissions,
   resolveDailyMissions,
 } from "./dailyMissionSelection.js";
+import { buildMissionLockDebugSnapshot } from "./missionLockDebugSnapshot.js";
 import { resolveRolloverDateKey } from "../storage/dailyRecordModel.js";
 import {
   getNextDateKey,
@@ -124,6 +125,19 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       resolvedMissions,
     });
   }, [isHydrated, resolvedMissions]);
+  const liveMissionIds = useMemo(() => getMissionStableIds(missions), [missions]);
+  const persistedPresentedMissionIds = useMemo(
+    () => toPresentedMissionIds(persistedPresentedMissions),
+    [persistedPresentedMissions],
+  );
+  const resolvedMissionIds = useMemo(() => getMissionStableIds(resolvedMissions), [resolvedMissions]);
+  const nextSelectedMissionIds = useMemo(() => {
+    return getNextSelectedMissionIds({
+      isHydrated,
+      currentSelectedMissionIds: selectedMissionIds,
+      resolvedMissions,
+    });
+  }, [isHydrated, resolvedMissions, selectedMissionIds]);
   const presentedMissions = useMemo(() => toPresentedMissions(displayedMissions), [displayedMissions]);
   const missionCompletion = useMemo(
     () => buildMissionCompletionMap(displayedMissions, missionCompletionSource),
@@ -218,15 +232,31 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   }, [currentDateKey]);
 
   useEffect(() => {
-    const liveMissionIds = getMissionStableIds(missions);
-    const persistedPresentedMissionIds = toPresentedMissionIds(persistedPresentedMissions);
-    const resolvedMissionIds = getMissionStableIds(resolvedMissions);
-    const nextSelectedMissionIds = getNextSelectedMissionIds({
-      isHydrated,
-      currentSelectedMissionIds: selectedMissionIds,
-      resolvedMissions,
-    });
+    setMissionLockDebugState((previous) => ({
+      ...(previous || {}),
+      ...buildMissionLockDebugSnapshot({
+        currentDateKey,
+        isHydrated,
+        selectedMissionIds,
+        liveMissionIds,
+        persistedPresentedMissionIds,
+        resolvedMissionIds,
+        missionCompletionSource,
+        nextSelectedMissionIds,
+      }),
+    }));
+  }, [
+    currentDateKey,
+    isHydrated,
+    selectedMissionIds,
+    liveMissionIds,
+    persistedPresentedMissionIds,
+    resolvedMissionIds,
+    missionCompletionSource,
+    nextSelectedMissionIds,
+  ]);
 
+  useEffect(() => {
     if (isMissionLockDebugEnabled()) {
       console.log("[MissionLockDebug]", {
         currentDateKey,
@@ -239,18 +269,6 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
         nextSelectedMissionIds,
       });
     }
-
-    setMissionLockDebugState((previous) => ({
-      ...(previous || {}),
-      currentDateKey,
-      isHydrated,
-      selectedMissionIds,
-      liveMissionIds,
-      persistedPresentedMissionIds,
-      resolvedMissionIds,
-      missionCompletionSource,
-      nextSelectedMissionIds,
-    }));
 
     if (!nextSelectedMissionIds) {
       return;
@@ -278,10 +296,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   }, [
     currentDateKey,
     isHydrated,
-    missionCompletionSource,
-    missions,
-    persistedPresentedMissions,
-    resolvedMissions,
+    nextSelectedMissionIds,
     selectedMissionIds,
   ]);
 
