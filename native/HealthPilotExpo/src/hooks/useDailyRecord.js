@@ -85,6 +85,20 @@ function toPresentedMissions(missions) {
     .filter(Boolean);
 }
 
+function isMissionLockDebugEnabled() {
+  return typeof __DEV__ !== "undefined" && __DEV__;
+}
+
+function toPresentedMissionIds(presentedMissions) {
+  if (!Array.isArray(presentedMissions)) {
+    return [];
+  }
+
+  return presentedMissions
+    .map((mission) => (typeof mission?.id === "string" ? mission.id.trim() : ""))
+    .filter(Boolean);
+}
+
 export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
   const [checkInNoteText, setCheckInNoteText] = useState("");
@@ -95,6 +109,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [hasUserCheckInInput, setHasUserCheckInInput] = useState(false);
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [missionLockDebugState, setMissionLockDebugState] = useState(null);
 
   const resolvedMissions = useMemo(() => {
     return resolveDailyMissions({
@@ -163,6 +178,25 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       setHasUserCheckInInput(false);
       const record = await loadDailyRecord(currentDateKey);
 
+      if (isMissionLockDebugEnabled()) {
+        const hydratedRecordDebug = {
+          selectedMissionIds: Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : [],
+          presentedMissionIds: toPresentedMissionIds(record?.presentedMissions),
+          missionCompletion: record?.missionCompletion ?? {},
+        };
+
+        console.log("[MissionLockHydrate]", {
+          currentDateKey,
+          ...hydratedRecordDebug,
+        });
+
+        setMissionLockDebugState((previous) => ({
+          ...(previous || {}),
+          currentDateKey,
+          hydratedRecord: hydratedRecordDebug,
+        }));
+      }
+
       if (cancelled) {
         return;
       }
@@ -184,18 +218,72 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   }, [currentDateKey]);
 
   useEffect(() => {
+    const liveMissionIds = getMissionStableIds(missions);
+    const persistedPresentedMissionIds = toPresentedMissionIds(persistedPresentedMissions);
+    const resolvedMissionIds = getMissionStableIds(resolvedMissions);
     const nextSelectedMissionIds = getNextSelectedMissionIds({
       isHydrated,
       currentSelectedMissionIds: selectedMissionIds,
       resolvedMissions,
     });
 
+    if (isMissionLockDebugEnabled()) {
+      console.log("[MissionLockDebug]", {
+        currentDateKey,
+        isHydrated,
+        selectedMissionIds,
+        liveMissionIds,
+        persistedPresentedMissionIds,
+        resolvedMissionIds,
+        missionCompletionSource,
+        nextSelectedMissionIds,
+      });
+
+      setMissionLockDebugState((previous) => ({
+        ...(previous || {}),
+        currentDateKey,
+        isHydrated,
+        selectedMissionIds,
+        liveMissionIds,
+        persistedPresentedMissionIds,
+        resolvedMissionIds,
+        missionCompletionSource,
+        nextSelectedMissionIds,
+      }));
+    }
+
     if (!nextSelectedMissionIds) {
       return;
     }
 
+    if (isMissionLockDebugEnabled()) {
+      const selectionUpdateDebug = {
+        before: selectedMissionIds,
+        after: nextSelectedMissionIds,
+      };
+
+      console.log("[MissionLockDebug] selectedMissionIds update", {
+        currentDateKey,
+        ...selectionUpdateDebug,
+      });
+
+      setMissionLockDebugState((previous) => ({
+        ...(previous || {}),
+        currentDateKey,
+        lastSelectionUpdate: selectionUpdateDebug,
+      }));
+    }
+
     setSelectedMissionIds(nextSelectedMissionIds);
-  }, [isHydrated, resolvedMissions, selectedMissionIds]);
+  }, [
+    currentDateKey,
+    isHydrated,
+    missionCompletionSource,
+    missions,
+    persistedPresentedMissions,
+    resolvedMissions,
+    selectedMissionIds,
+  ]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -205,6 +293,25 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     let cancelled = false;
 
     async function persistDailyRecord() {
+      if (isMissionLockDebugEnabled()) {
+        const persistDebug = {
+          selectedMissionIds,
+          presentedMissionIds: toPresentedMissionIds(presentedMissions),
+          missionCompletion,
+        };
+
+        console.log("[MissionLockPersist]", {
+          currentDateKey,
+          ...persistDebug,
+        });
+
+        setMissionLockDebugState((previous) => ({
+          ...(previous || {}),
+          currentDateKey,
+          lastPersist: persistDebug,
+        }));
+      }
+
       await saveDailyRecord(currentDateKey, {
         date: currentDateKey,
         healthSnapshot,
@@ -306,6 +413,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     healthSnapshot,
     isHydrated,
     isMissionCompleted,
+    missionLockDebugState,
     missions: displayedMissions,
     projectedTomorrow,
     setHealthSnapshot,

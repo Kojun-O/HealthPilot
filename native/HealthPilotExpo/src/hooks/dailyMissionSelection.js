@@ -65,6 +65,10 @@ function toLiveMissionMap(liveMissions) {
   return map;
 }
 
+function isMissionLockDebugEnabled() {
+  return typeof __DEV__ !== "undefined" && __DEV__;
+}
+
 export function resolveDailyMissions({
   liveMissions,
   selectedMissionIds,
@@ -110,6 +114,15 @@ export function resolveDailyMissions({
     }
 
     pushMission(mission);
+  }
+
+  if (isMissionLockDebugEnabled()) {
+    console.log("[MissionLockResolve]", {
+      selectedMissionIds: normalizedSelectedMissionIds,
+      liveMissionIds: getMissionStableIds(liveMissionList),
+      persistedPresentedMissionIds: Array.from(presentedMissionMap.keys()),
+      resolvedMissionIds: getMissionStableIds(resolved),
+    });
   }
 
   return resolved;

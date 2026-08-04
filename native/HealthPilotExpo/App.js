@@ -61,6 +61,7 @@ export default function App() {
     currentDateKey,
     isHydrated,
     isMissionCompleted,
+    missionLockDebugState,
     missions,
     projectedTomorrow,
     setHealthSnapshot,
@@ -102,6 +103,26 @@ export default function App() {
     const weekday = weekdays[localDate.getDay()];
 
     return `${year}年${month}月${day}日（${weekday}）`;
+  }, []);
+
+  const toDebugText = useCallback((value) => {
+    if (value === undefined) {
+      return "undefined";
+    }
+
+    if (value === null) {
+      return "null";
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
   }, []);
 
   useEffect(() => {
@@ -341,6 +362,34 @@ export default function App() {
             />
           </View>
         </View>
+
+        {typeof __DEV__ !== "undefined" && __DEV__ ? (
+          <View style={styles.debugCard}>
+            <Text style={styles.debugTitle}>Mission Lock Debug</Text>
+            <Text style={styles.debugLine}>currentDateKey: {toDebugText(missionLockDebugState?.currentDateKey)}</Text>
+            <Text style={styles.debugLine}>isHydrated: {toDebugText(missionLockDebugState?.isHydrated)}</Text>
+            <Text style={styles.debugLine}>selectedMissionIds: {toDebugText(missionLockDebugState?.selectedMissionIds)}</Text>
+            <Text style={styles.debugLine}>liveMissionIds: {toDebugText(missionLockDebugState?.liveMissionIds)}</Text>
+            <Text style={styles.debugLine}>persistedPresentedMissionIds: {toDebugText(missionLockDebugState?.persistedPresentedMissionIds)}</Text>
+            <Text style={styles.debugLine}>resolvedMissionIds: {toDebugText(missionLockDebugState?.resolvedMissionIds)}</Text>
+            <Text style={styles.debugLine}>missionCompletionSource: {toDebugText(missionLockDebugState?.missionCompletionSource)}</Text>
+            <Text style={styles.debugLine}>nextSelectedMissionIds: {toDebugText(missionLockDebugState?.nextSelectedMissionIds)}</Text>
+
+            <Text style={styles.debugTitle}>Hydrated Record</Text>
+            <Text style={styles.debugLine}>selectedMissionIds: {toDebugText(missionLockDebugState?.hydratedRecord?.selectedMissionIds)}</Text>
+            <Text style={styles.debugLine}>presentedMissionIds: {toDebugText(missionLockDebugState?.hydratedRecord?.presentedMissionIds)}</Text>
+            <Text style={styles.debugLine}>missionCompletion: {toDebugText(missionLockDebugState?.hydratedRecord?.missionCompletion)}</Text>
+
+            <Text style={styles.debugTitle}>Last Selection Update</Text>
+            <Text style={styles.debugLine}>before: {toDebugText(missionLockDebugState?.lastSelectionUpdate?.before)}</Text>
+            <Text style={styles.debugLine}>after: {toDebugText(missionLockDebugState?.lastSelectionUpdate?.after)}</Text>
+
+            <Text style={styles.debugTitle}>Last Persist</Text>
+            <Text style={styles.debugLine}>selectedMissionIds: {toDebugText(missionLockDebugState?.lastPersist?.selectedMissionIds)}</Text>
+            <Text style={styles.debugLine}>presentedMissionIds: {toDebugText(missionLockDebugState?.lastPersist?.presentedMissionIds)}</Text>
+            <Text style={styles.debugLine}>missionCompletion: {toDebugText(missionLockDebugState?.lastPersist?.missionCompletion)}</Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <StatusBar style="auto" />
@@ -567,5 +616,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     lineHeight: 20,
+  },
+  debugCard: {
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 8,
+    backgroundColor: "#fafafa",
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#444",
+    marginTop: 6,
+  },
+  debugLine: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: "#555",
   },
 });
