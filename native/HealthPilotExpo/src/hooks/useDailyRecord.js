@@ -178,24 +178,24 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       setHasUserCheckInInput(false);
       const record = await loadDailyRecord(currentDateKey);
 
-      if (isMissionLockDebugEnabled()) {
-        const hydratedRecordDebug = {
-          selectedMissionIds: Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : [],
-          presentedMissionIds: toPresentedMissionIds(record?.presentedMissions),
-          missionCompletion: record?.missionCompletion ?? {},
-        };
+      const hydratedRecordDebug = {
+        selectedMissionIds: Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : [],
+        presentedMissionIds: toPresentedMissionIds(record?.presentedMissions),
+        missionCompletion: record?.missionCompletion ?? {},
+      };
 
+      if (isMissionLockDebugEnabled()) {
         console.log("[MissionLockHydrate]", {
           currentDateKey,
           ...hydratedRecordDebug,
         });
-
-        setMissionLockDebugState((previous) => ({
-          ...(previous || {}),
-          currentDateKey,
-          hydratedRecord: hydratedRecordDebug,
-        }));
       }
+
+      setMissionLockDebugState((previous) => ({
+        ...(previous || {}),
+        currentDateKey,
+        hydratedRecord: hydratedRecordDebug,
+      }));
 
       if (cancelled) {
         return;
@@ -238,41 +238,41 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
         missionCompletionSource,
         nextSelectedMissionIds,
       });
-
-      setMissionLockDebugState((previous) => ({
-        ...(previous || {}),
-        currentDateKey,
-        isHydrated,
-        selectedMissionIds,
-        liveMissionIds,
-        persistedPresentedMissionIds,
-        resolvedMissionIds,
-        missionCompletionSource,
-        nextSelectedMissionIds,
-      }));
     }
+
+    setMissionLockDebugState((previous) => ({
+      ...(previous || {}),
+      currentDateKey,
+      isHydrated,
+      selectedMissionIds,
+      liveMissionIds,
+      persistedPresentedMissionIds,
+      resolvedMissionIds,
+      missionCompletionSource,
+      nextSelectedMissionIds,
+    }));
 
     if (!nextSelectedMissionIds) {
       return;
     }
 
-    if (isMissionLockDebugEnabled()) {
-      const selectionUpdateDebug = {
-        before: selectedMissionIds,
-        after: nextSelectedMissionIds,
-      };
+    const selectionUpdateDebug = {
+      before: selectedMissionIds,
+      after: nextSelectedMissionIds,
+    };
 
+    if (isMissionLockDebugEnabled()) {
       console.log("[MissionLockDebug] selectedMissionIds update", {
         currentDateKey,
         ...selectionUpdateDebug,
       });
-
-      setMissionLockDebugState((previous) => ({
-        ...(previous || {}),
-        currentDateKey,
-        lastSelectionUpdate: selectionUpdateDebug,
-      }));
     }
+
+    setMissionLockDebugState((previous) => ({
+      ...(previous || {}),
+      currentDateKey,
+      lastSelectionUpdate: selectionUpdateDebug,
+    }));
 
     setSelectedMissionIds(nextSelectedMissionIds);
   }, [
@@ -293,24 +293,24 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     let cancelled = false;
 
     async function persistDailyRecord() {
-      if (isMissionLockDebugEnabled()) {
-        const persistDebug = {
-          selectedMissionIds,
-          presentedMissionIds: toPresentedMissionIds(presentedMissions),
-          missionCompletion,
-        };
+      const persistDebug = {
+        selectedMissionIds,
+        presentedMissionIds: toPresentedMissionIds(presentedMissions),
+        missionCompletion,
+      };
 
+      if (isMissionLockDebugEnabled()) {
         console.log("[MissionLockPersist]", {
           currentDateKey,
           ...persistDebug,
         });
-
-        setMissionLockDebugState((previous) => ({
-          ...(previous || {}),
-          currentDateKey,
-          lastPersist: persistDebug,
-        }));
       }
+
+      setMissionLockDebugState((previous) => ({
+        ...(previous || {}),
+        currentDateKey,
+        lastPersist: persistDebug,
+      }));
 
       await saveDailyRecord(currentDateKey, {
         date: currentDateKey,
