@@ -115,6 +115,17 @@ export function resolveDailyMissions({
   return resolved;
 }
 
+export function resolveDisplayedMissions({
+  isHydrated,
+  resolvedMissions,
+} = {}) {
+  if (!isHydrated) {
+    return [];
+  }
+
+  return Array.isArray(resolvedMissions) ? resolvedMissions : [];
+}
+
 export function areMissionIdListsEqual(leftIds, rightIds) {
   const left = toStringArray(leftIds);
   const right = toStringArray(rightIds);

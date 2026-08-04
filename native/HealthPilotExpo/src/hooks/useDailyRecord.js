@@ -3,6 +3,7 @@ import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId.j
 import { buildMorningOutcome, shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking.js";
 import {
   getNextSelectedMissionIds,
+  resolveDisplayedMissions,
   resolveDailyMissions,
 } from "./dailyMissionSelection.js";
 import { resolveRolloverDateKey } from "../storage/dailyRecordModel.js";
@@ -102,13 +103,19 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       persistedPresentedMissions,
     });
   }, [missions, persistedPresentedMissions, selectedMissionIds]);
-  const presentedMissions = useMemo(() => toPresentedMissions(resolvedMissions), [resolvedMissions]);
+  const displayedMissions = useMemo(() => {
+    return resolveDisplayedMissions({
+      isHydrated,
+      resolvedMissions,
+    });
+  }, [isHydrated, resolvedMissions]);
+  const presentedMissions = useMemo(() => toPresentedMissions(displayedMissions), [displayedMissions]);
   const missionCompletion = useMemo(
-    () => buildMissionCompletionMap(resolvedMissions, missionCompletionSource),
-    [missionCompletionSource, resolvedMissions],
+    () => buildMissionCompletionMap(displayedMissions, missionCompletionSource),
+    [displayedMissions, missionCompletionSource],
   );
   const completedImpact = useMemo(() => {
-    return resolvedMissions.reduce((sum, mission) => {
+    return displayedMissions.reduce((sum, mission) => {
       const missionId = getMissionStableId(mission);
 
       if (!missionId || !missionCompletion[missionId]) {
@@ -118,7 +125,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       const impact = Number(mission.expectedImpact);
       return sum + (Number.isFinite(impact) ? Math.round(impact) : 0);
     }, 0);
-  }, [missionCompletion, resolvedMissions]);
+  }, [displayedMissions, missionCompletion]);
   const projectedTomorrow = useMemo(() => {
     const baseline = Number.isFinite(Number(baselineTomorrow)) ? Math.round(Number(baselineTomorrow)) : 0;
     return Math.min(100, Math.max(0, baseline + completedImpact));
@@ -299,7 +306,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     healthSnapshot,
     isHydrated,
     isMissionCompleted,
-    missions: resolvedMissions,
+    missions: displayedMissions,
     projectedTomorrow,
     setHealthSnapshot,
     toggleMissionCompletion,

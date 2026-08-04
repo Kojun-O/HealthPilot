@@ -218,27 +218,29 @@ export default function App() {
 
         <View style={styles.missionSection}>
           <Text style={styles.section}>Mission</Text>
-          {missions.map((mission) => {
-            const missionId = getMissionStableId(mission);
+          {!isHydrated ? (
+            <Text style={styles.missionLoading}>Loading missions...</Text>
+          ) : missions.map((mission) => {
+              const missionId = getMissionStableId(mission);
 
-            if (!missionId) {
-              return null;
-            }
+              if (!missionId) {
+                return null;
+              }
 
-            return (
-              <Pressable
-                key={missionId}
-                onPress={() => toggleMissionCompletion(mission)}
-                accessibilityRole="button"
-                accessibilityState={{ checked: isMissionCompleted(mission) }}
-                style={styles.missionRow}
-              >
-                <Text style={styles.missionItem}>
-                  {isMissionCompleted(mission) ? "☑" : "☐"} {mission.title}
-                </Text>
-              </Pressable>
-            );
-          })}
+              return (
+                <Pressable
+                  key={missionId}
+                  onPress={() => toggleMissionCompletion(mission)}
+                  accessibilityRole="button"
+                  accessibilityState={{ checked: isMissionCompleted(mission) }}
+                  style={styles.missionRow}
+                >
+                  <Text style={styles.missionItem}>
+                    {isMissionCompleted(mission) ? "☑" : "☐"} {mission.title}
+                  </Text>
+                </Pressable>
+              );
+            })}
         </View>
 
         <View style={styles.discoverySection}>
@@ -401,6 +403,11 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontWeight: "600",
     color: "#111",
+  },
+  missionLoading: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 6,
   },
   compactCard: {
     borderWidth: 1,
