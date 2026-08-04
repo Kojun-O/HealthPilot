@@ -363,8 +363,7 @@ export default function App() {
           </View>
         </View>
 
-        {typeof __DEV__ !== "undefined" && __DEV__ ? (
-          <View style={styles.debugCard}>
+        <View style={styles.debugCard}>
             <Text style={styles.debugTitle}>Mission Lock Debug</Text>
             <Text style={styles.debugLine}>currentDateKey: {toDebugText(missionLockDebugState?.currentDateKey)}</Text>
             <Text style={styles.debugLine}>isHydrated: {toDebugText(missionLockDebugState?.isHydrated)}</Text>
@@ -389,7 +388,6 @@ export default function App() {
             <Text style={styles.debugLine}>presentedMissionIds: {toDebugText(missionLockDebugState?.lastPersist?.presentedMissionIds)}</Text>
             <Text style={styles.debugLine}>missionCompletion: {toDebugText(missionLockDebugState?.lastPersist?.missionCompletion)}</Text>
           </View>
-        ) : null}
       </ScrollView>
 
       <StatusBar style="auto" />
