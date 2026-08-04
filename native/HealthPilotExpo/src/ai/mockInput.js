@@ -1,6 +1,7 @@
-import { loadHealthData } from "../health/healthDataRepository";
-import { generateInsights } from "./insights/generateInsights";
-import { normalizeHealthData } from "./normalizeHealthData";
+import { loadHealthData } from "../health/healthDataRepository.js";
+import { generateInsights } from "./insights/generateInsights.js";
+import { normalizeHealthData } from "./normalizeHealthData.js";
+import { resolveAiInputDateKey } from "./aiInputDateKey.js";
 
 export const mockAiInput = {
   date: "2026-07-08",
@@ -38,7 +39,8 @@ export const mockAiInput = {
   },
 };
 
-export async function buildAiInput() {
+export async function buildAiInput(options = {}) {
+  const now = options?.now ?? new Date();
   const healthSnapshot = await loadHealthData();
   const normalizedHealthData = normalizeHealthData(healthSnapshot.health);
   const insights = generateInsights(normalizedHealthData);
@@ -46,7 +48,7 @@ export async function buildAiInput() {
   return {
     input: {
       ...mockAiInput,
-      date: new Date().toISOString().slice(0, 10),
+      date: resolveAiInputDateKey(now),
       health: healthSnapshot.health,
       normalizedHealthData,
       insights,

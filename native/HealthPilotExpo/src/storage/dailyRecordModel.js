@@ -42,6 +42,10 @@ export function getTodayDateKey(now = new Date()) {
   return formatLocalDateKey(now);
 }
 
+export function resolveLocalDateKey(now = new Date()) {
+  return getTodayDateKey(now);
+}
+
 export function toDateKey(value) {
   const parsed = parseDateKey(value);
 
@@ -64,6 +68,27 @@ export function getPreviousDateKey(dateKey) {
 
 export function getNextDateKey(dateKey) {
   return shiftDateKey(dateKey, 1);
+}
+
+export function resolveRolloverDateKey(previousDateKey, now = new Date()) {
+  const today = getTodayDateKey(now);
+  return previousDateKey === today ? previousDateKey : today;
+}
+
+export function shouldRefreshInsightOnDateChange({
+  currentDateKey,
+  lastInsightDateKey,
+  isHydrated,
+}) {
+  if (!isHydrated) {
+    return false;
+  }
+
+  if (typeof currentDateKey !== "string" || !currentDateKey) {
+    return false;
+  }
+
+  return currentDateKey !== lastInsightDateKey;
 }
 
 function toBooleanMap(value) {

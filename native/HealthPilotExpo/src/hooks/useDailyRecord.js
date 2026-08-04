@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId";
-import { buildMorningOutcome, shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking";
+import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId.js";
+import { buildMorningOutcome, shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking.js";
+import {
+  getNextSelectedMissionIds,
+  resolveDailyMissions,
+} from "./dailyMissionSelection.js";
+import { resolveRolloverDateKey } from "../storage/dailyRecordModel.js";
 import {
   getNextDateKey,
   getPreviousDateKey,
   getTodayDateKey,
   loadDailyRecord,
   saveDailyRecord,
-} from "../storage/dailyRecordStorage";
+} from "../storage/dailyRecordStorage.js";
 
 const DEFAULT_CHECK_IN_RATINGS = Object.freeze({
   condition: 3,
@@ -83,20 +88,27 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
   const [checkInNoteText, setCheckInNoteText] = useState("");
   const [missionCompletionSource, setMissionCompletionSource] = useState({});
+  const [persistedPresentedMissions, setPersistedPresentedMissions] = useState([]);
   const [healthSnapshot, setHealthSnapshot] = useState(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState([]);
   const [hasUserCheckInInput, setHasUserCheckInInput] = useState(false);
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey());
   const [isHydrated, setIsHydrated] = useState(false);
 
-  const stableMissionIds = useMemo(() => getMissionStableIds(missions), [missions]);
-  const presentedMissions = useMemo(() => toPresentedMissions(missions), [missions]);
+  const resolvedMissions = useMemo(() => {
+    return resolveDailyMissions({
+      liveMissions: missions,
+      selectedMissionIds,
+      persistedPresentedMissions,
+    });
+  }, [missions, persistedPresentedMissions, selectedMissionIds]);
+  const presentedMissions = useMemo(() => toPresentedMissions(resolvedMissions), [resolvedMissions]);
   const missionCompletion = useMemo(
-    () => buildMissionCompletionMap(missions, missionCompletionSource),
-    [missionCompletionSource, missions],
+    () => buildMissionCompletionMap(resolvedMissions, missionCompletionSource),
+    [missionCompletionSource, resolvedMissions],
   );
   const completedImpact = useMemo(() => {
-    return (Array.isArray(missions) ? missions : []).reduce((sum, mission) => {
+    return resolvedMissions.reduce((sum, mission) => {
       const missionId = getMissionStableId(mission);
 
       if (!missionId || !missionCompletion[missionId]) {
@@ -106,7 +118,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       const impact = Number(mission.expectedImpact);
       return sum + (Number.isFinite(impact) ? Math.round(impact) : 0);
     }, 0);
-  }, [missionCompletion, missions]);
+  }, [missionCompletion, resolvedMissions]);
   const projectedTomorrow = useMemo(() => {
     const baseline = Number.isFinite(Number(baselineTomorrow)) ? Math.round(Number(baselineTomorrow)) : 0;
     return Math.min(100, Math.max(0, baseline + completedImpact));
@@ -126,14 +138,8 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      const today = getTodayDateKey();
-
       setCurrentDateKey((previousDateKey) => {
-        if (previousDateKey === today) {
-          return previousDateKey;
-        }
-
-        return today;
+        return resolveRolloverDateKey(previousDateKey, new Date());
       });
     }, 60 * 1000);
 
@@ -157,6 +163,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       setCheckInRatings(normalizeCheckInRatings(record?.checkIn ?? DEFAULT_CHECK_IN_RATINGS));
       setCheckInNoteText(typeof record?.checkInNote?.text === "string" ? record.checkInNote.text : "");
       setMissionCompletionSource(record?.missionCompletion ?? {});
+      setPersistedPresentedMissions(Array.isArray(record?.presentedMissions) ? record.presentedMissions : []);
       setSelectedMissionIds(Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : []);
       setHealthSnapshot(record?.healthSnapshot ?? null);
       setIsHydrated(true);
@@ -170,12 +177,18 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   }, [currentDateKey]);
 
   useEffect(() => {
-    if (!stableMissionIds.length) {
+    const nextSelectedMissionIds = getNextSelectedMissionIds({
+      isHydrated,
+      currentSelectedMissionIds: selectedMissionIds,
+      resolvedMissions,
+    });
+
+    if (!nextSelectedMissionIds) {
       return;
     }
 
-    setSelectedMissionIds(stableMissionIds);
-  }, [stableMissionIds]);
+    setSelectedMissionIds(nextSelectedMissionIds);
+  }, [isHydrated, resolvedMissions, selectedMissionIds]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -286,6 +299,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     healthSnapshot,
     isHydrated,
     isMissionCompleted,
+    missions: resolvedMissions,
     projectedTomorrow,
     setHealthSnapshot,
     toggleMissionCompletion,

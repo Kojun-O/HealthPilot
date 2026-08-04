@@ -1,11 +1,12 @@
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { generateHealthPilotInsight } from "./src/ai/engine";
 import { buildAiInput } from "./src/ai/mockInput";
 import { AIBriefingCard } from "./src/components/AIBriefingCard";
 import { getMissionStableId } from "./src/ai/missionStableId";
 import { useDailyRecord } from "./src/hooks/useDailyRecord";
+import { shouldRefreshInsightOnDateChange } from "./src/storage/dailyRecordModel";
 
 const CHECK_IN_ITEMS = [
   { key: "condition", label: "体調" },
@@ -19,6 +20,7 @@ export default function App() {
   const [insight, setInsight] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const lastInsightDateKeyRef = useRef(null);
 
   const formatLocalTime = useCallback((date) => {
     const hours = String(date.getHours()).padStart(2, "0");
@@ -38,7 +40,7 @@ export default function App() {
   }, []);
 
   const safeInsight = insight && typeof insight === "object" ? insight : null;
-  const missions = Array.isArray(safeInsight?.missions) ? safeInsight.missions : [];
+  const liveMissions = Array.isArray(safeInsight?.missions) ? safeInsight.missions : [];
   const tomorrowCapacityComment =
     typeof safeInsight?.tomorrowCapacityComment === "string" && safeInsight.tomorrowCapacityComment.trim()
       ? safeInsight.tomorrowCapacityComment
@@ -57,14 +59,16 @@ export default function App() {
     checkInNoteText,
     completedImpact,
     currentDateKey,
+    isHydrated,
     isMissionCompleted,
+    missions,
     projectedTomorrow,
     setHealthSnapshot,
     toggleMissionCompletion,
     updateCheckInRating,
     updateCheckInNoteText,
   } = useDailyRecord({
-    missions,
+    missions: liveMissions,
     baselineTomorrow,
     actualCapacity,
   });
@@ -113,6 +117,7 @@ export default function App() {
       setInsight(result.insight);
       setHealthSnapshot(result.healthSnapshot ?? null);
       setLastUpdatedAt(new Date());
+      lastInsightDateKeyRef.current = currentDateKey;
     }
 
     loadInitialInsight();
@@ -122,6 +127,41 @@ export default function App() {
     };
   }, [loadInsight, setHealthSnapshot]);
 
+  useEffect(() => {
+    if (!safeInsight) {
+      return;
+    }
+
+    if (!shouldRefreshInsightOnDateChange({
+      currentDateKey,
+      lastInsightDateKey: lastInsightDateKeyRef.current,
+      isHydrated,
+    })) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function reloadInsightForDateRollover() {
+      const result = await loadInsight();
+
+      if (cancelled) {
+        return;
+      }
+
+      setInsight(result.insight);
+      setHealthSnapshot(result.healthSnapshot ?? null);
+      setLastUpdatedAt(new Date());
+      lastInsightDateKeyRef.current = currentDateKey;
+    }
+
+    reloadInsightForDateRollover();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDateKey, isHydrated, loadInsight, safeInsight, setHealthSnapshot]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
 
@@ -129,6 +169,7 @@ export default function App() {
       const result = await loadInsight();
       setInsight(result.insight);
       setHealthSnapshot(result.healthSnapshot);
+      lastInsightDateKeyRef.current = currentDateKey;
     } finally {
       setLastUpdatedAt(new Date());
       setRefreshing(false);
