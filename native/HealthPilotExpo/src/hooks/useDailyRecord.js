@@ -6,6 +6,7 @@ import {
   resolveDisplayedMissions,
   resolveDailyMissions,
 } from "./dailyMissionSelection.js";
+import { buildPersistableDailyRecord } from "./dailyRecordPersistence.js";
 import { resolveRolloverDateKey } from "../storage/dailyRecordModel.js";
 import {
   getNextDateKey,
@@ -82,16 +83,6 @@ function toPresentedMissions(missions) {
         expectedImpact: Number.isFinite(expectedImpact) ? Math.max(0, Math.round(expectedImpact)) : 0,
       };
     })
-    .filter(Boolean);
-}
-
-function toPresentedMissionIds(presentedMissions) {
-  if (!Array.isArray(presentedMissions)) {
-    return [];
-  }
-
-  return presentedMissions
-    .map((mission) => (typeof mission?.id === "string" ? mission.id.trim() : ""))
     .filter(Boolean);
 }
 
@@ -211,23 +202,27 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   ]);
 
   useEffect(() => {
-    if (!isHydrated) {
+    const nextRecord = buildPersistableDailyRecord({
+      isHydrated,
+      nextSelectedMissionIds,
+      currentDateKey,
+      healthSnapshot,
+      checkInRatings,
+      checkInNoteText,
+      presentedMissions,
+      selectedMissionIds,
+      missionCompletion,
+      tomorrowCapacityPrediction,
+    });
+
+    if (!nextRecord) {
       return;
     }
 
     let cancelled = false;
 
     async function persistDailyRecord() {
-      await saveDailyRecord(currentDateKey, {
-        date: currentDateKey,
-        healthSnapshot,
-        checkIn: checkInRatings,
-        checkInNote: checkInNoteText,
-        presentedMissions,
-        selectedMissionIds,
-        missionCompletion,
-        tomorrowCapacityPrediction,
-      });
+      await saveDailyRecord(currentDateKey, nextRecord);
 
       const previousDateKey = getPreviousDateKey(currentDateKey);
       const previousRecord = await loadDailyRecord(previousDateKey);
@@ -270,6 +265,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     isHydrated,
     missionCompletion,
     missionCompletionSource,
+    nextSelectedMissionIds,
     presentedMissions,
     selectedMissionIds,
     hasUserCheckInInput,
