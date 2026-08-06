@@ -234,6 +234,53 @@ test("builds a daily record payload after mission lock IDs are committed", async
   );
 });
 
+test("builds a daily record payload with a committed check-in event", async () => {
+  const { buildPersistableDailyRecord } = await loadDailyRecordHookModule();
+
+  const nextRecord = buildPersistableDailyRecord({
+    isHydrated: true,
+    nextSelectedMissionIds: null,
+    currentDateKey: "2026-08-05",
+    checkInRatings: {
+      condition: 4,
+      sleep: 3,
+      focus: 4,
+      mentalSpace: 3,
+      activity: 2,
+    },
+    checkInEvent: {
+      timestamp: "2026-08-05T04:14:00.000Z",
+      condition: 4,
+      sleep: 3,
+      focus: 4,
+      mentalSpace: 3,
+      activity: 2,
+    },
+    presentedMissions: [
+      { id: "mission_a", title: "mission_a", expectedImpact: 1 },
+      { id: "mission_b", title: "mission_b", expectedImpact: 2 },
+      { id: "mission_c", title: "mission_c", expectedImpact: 3 },
+    ],
+    selectedMissionIds: ["mission_a", "mission_b", "mission_c"],
+    missionCompletion: {
+      mission_a: false,
+      mission_b: false,
+      mission_c: false,
+    },
+    tomorrowCapacityPrediction: {
+      baseline: 50,
+      projected: 56,
+      completedImpact: 6,
+      delta: 6,
+      targetDate: "2026-08-06",
+    },
+  });
+
+  assert.equal(typeof nextRecord.checkInEvent, "object");
+  assert.equal(nextRecord.checkInEvent.timestamp, "2026-08-05T04:14:00.000Z");
+  assert.equal(nextRecord.tomorrowCapacityPrediction.baseline, 50);
+});
+
 test("same-date live mission changes keep persisted payload pinned to committed mission IDs", async () => {
   const { buildPersistableDailyRecord } = await loadDailyRecordHookModule();
   const {

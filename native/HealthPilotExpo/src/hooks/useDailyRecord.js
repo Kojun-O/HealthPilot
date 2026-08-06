@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { getMissionStableId, getMissionStableIds } from "../ai/missionStableId.js";
 import { buildMorningOutcome, shouldPersistMorningOutcomeLink } from "./morningOutcomeLinking.js";
+import {
+  buildCommittedCheckInEvent,
+  shouldFlushPendingCheckInEventOnAppStateChange,
+} from "./checkInEventLifecycle.js";
 import {
   getNextSelectedMissionIds,
   resolveDisplayedMissions,
@@ -23,6 +28,8 @@ const DEFAULT_CHECK_IN_RATINGS = Object.freeze({
   mentalSpace: 3,
   activity: 3,
 });
+
+const CHECK_IN_EVENT_COMMIT_DELAY_MS = 3500;
 
 function clampCheckInValue(value) {
   const numeric = Number(value);
@@ -88,6 +95,8 @@ function toPresentedMissions(missions) {
 
 export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
+  const [checkInEvent, setCheckInEvent] = useState(null);
+  const [pendingCheckInEventTimestamp, setPendingCheckInEventTimestamp] = useState(null);
   const [checkInNoteText, setCheckInNoteText] = useState("");
   const [missionCompletionSource, setMissionCompletionSource] = useState({});
   const [persistedPresentedMissions, setPersistedPresentedMissions] = useState([]);
@@ -96,6 +105,8 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [hasUserCheckInInput, setHasUserCheckInInput] = useState(false);
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey());
   const [isHydrated, setIsHydrated] = useState(false);
+  const appStateRef = useRef(AppState.currentState);
+  const lastCommittedCheckInEventTimestampRef = useRef(null);
 
   const resolvedMissions = useMemo(() => {
     return resolveDailyMissions({
@@ -151,6 +162,54 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     };
   }, [baselineTomorrow, completedImpact, currentDateKey, projectedTomorrow]);
 
+  const commitPendingCheckInEvent = useCallback(() => {
+    const nextEvent = buildCommittedCheckInEvent({
+      pendingTimestamp: pendingCheckInEventTimestamp,
+      checkInRatings,
+      lastCommittedTimestamp: lastCommittedCheckInEventTimestampRef.current,
+    });
+
+    if (!nextEvent) {
+      return false;
+    }
+
+    lastCommittedCheckInEventTimestampRef.current = nextEvent.timestamp;
+    setCheckInEvent(nextEvent);
+    setPendingCheckInEventTimestamp(null);
+    return true;
+  }, [checkInRatings, pendingCheckInEventTimestamp]);
+
+  useEffect(() => {
+    if (!pendingCheckInEventTimestamp) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      commitPendingCheckInEvent();
+    }, CHECK_IN_EVENT_COMMIT_DELAY_MS);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [commitPendingCheckInEvent, pendingCheckInEventTimestamp]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      const previousAppState = appStateRef.current;
+      appStateRef.current = nextAppState;
+
+      if (!shouldFlushPendingCheckInEventOnAppStateChange(previousAppState, nextAppState)) {
+        return;
+      }
+
+      commitPendingCheckInEvent();
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [commitPendingCheckInEvent]);
+
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentDateKey((previousDateKey) => {
@@ -169,6 +228,9 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     async function hydrateDailyRecord() {
       setIsHydrated(false);
       setHasUserCheckInInput(false);
+      setCheckInEvent(null);
+      setPendingCheckInEventTimestamp(null);
+      lastCommittedCheckInEventTimestampRef.current = null;
       const record = await loadDailyRecord(currentDateKey);
 
       if (cancelled) {
@@ -208,6 +270,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       currentDateKey,
       healthSnapshot,
       checkInRatings,
+      checkInEvent,
       checkInNoteText,
       presentedMissions,
       selectedMissionIds,
@@ -220,9 +283,20 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     }
 
     let cancelled = false;
+    const consumedCheckInEventTimestamp = checkInEvent?.timestamp || null;
 
     async function persistDailyRecord() {
       await saveDailyRecord(currentDateKey, nextRecord);
+
+      if (!cancelled && consumedCheckInEventTimestamp) {
+        setCheckInEvent((previous) => {
+          if (!previous || previous.timestamp !== consumedCheckInEventTimestamp) {
+            return previous;
+          }
+
+          return null;
+        });
+      }
 
       const previousDateKey = getPreviousDateKey(currentDateKey);
       const previousRecord = await loadDailyRecord(previousDateKey);
@@ -263,6 +337,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     currentDateKey,
     healthSnapshot,
     isHydrated,
+    checkInEvent,
     missionCompletion,
     missionCompletionSource,
     nextSelectedMissionIds,
@@ -274,6 +349,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
 
   const updateCheckInRating = useCallback((key, value) => {
     setHasUserCheckInInput(true);
+    setPendingCheckInEventTimestamp(new Date().toISOString());
     setCheckInRatings((previous) => ({
       ...previous,
       [key]: value,

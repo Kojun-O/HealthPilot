@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  appendCheckInEvent,
   getNextDateKey,
   getPreviousDateKey,
   getTodayDateKey,
+  normalizeCheckInEvents,
   normalizeDailyRecord,
   resolveCheckInNoteForSave,
   toDateKey,
@@ -43,6 +45,20 @@ export async function saveDailyRecord(dateKey, dailyRecord) {
   const safeDateKey = toDateKey(dateKey);
   const existingRecord = await loadDailyRecord(safeDateKey);
   const normalized = normalizeDailyRecord(dailyRecord, safeDateKey);
+  const existingCheckInEvents = normalizeCheckInEvents(existingRecord?.checkInEvents);
+  const hasIncomingCheckInEvents = Array.isArray(dailyRecord?.checkInEvents);
+
+  normalized.checkInEvents = hasIncomingCheckInEvents
+    ? normalizeCheckInEvents(dailyRecord.checkInEvents)
+    : existingCheckInEvents;
+
+  if (dailyRecord?.checkInEvent) {
+    normalized.checkInEvents = appendCheckInEvent(
+      normalized.checkInEvents,
+      dailyRecord.checkInEvent,
+    );
+  }
+
   normalized.checkInNote = resolveCheckInNoteForSave(
     normalized.checkInNote,
     existingRecord?.checkInNote,

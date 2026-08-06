@@ -183,6 +183,73 @@ export function normalizeCheckIn(value) {
   };
 }
 
+function toCheckInSnapshotFromEvent(event) {
+  if (!event || typeof event !== "object") {
+    return null;
+  }
+
+  return {
+    condition: clampRating(event.condition),
+    sleep: clampRating(event.sleep),
+    focus: clampRating(event.focus),
+    mentalSpace: clampRating(event.mentalSpace),
+    activity: clampRating(event.activity),
+  };
+}
+
+export function normalizeCheckInEvent(value) {
+  const source = value && typeof value === "object" ? value : null;
+
+  if (!source) {
+    return null;
+  }
+
+  const timestamp = toIsoStringOrNull(source.timestamp);
+
+  if (!timestamp) {
+    return null;
+  }
+
+  const snapshot = toCheckInSnapshotFromEvent(source);
+
+  if (!snapshot) {
+    return null;
+  }
+
+  return {
+    timestamp,
+    ...snapshot,
+  };
+}
+
+export function normalizeCheckInEvents(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((event) => normalizeCheckInEvent(event))
+    .filter(Boolean)
+    .sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+}
+
+export function appendCheckInEvent(existingEvents, nextEvent) {
+  const normalizedEvents = normalizeCheckInEvents(existingEvents);
+  const normalizedEvent = normalizeCheckInEvent(nextEvent);
+
+  if (!normalizedEvent) {
+    return normalizedEvents;
+  }
+
+  const alreadyExists = normalizedEvents.some((event) => event.timestamp === normalizedEvent.timestamp);
+
+  if (alreadyExists) {
+    return normalizedEvents;
+  }
+
+  return [...normalizedEvents, normalizedEvent].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+}
+
 export function normalizePresentedMissions(value) {
   if (!Array.isArray(value)) {
     return [];
@@ -303,13 +370,18 @@ export function normalizeMorningOutcome(value) {
 export function normalizeDailyRecord(value, dateKey) {
   const source = value && typeof value === "object" ? value : {};
   const normalizedDate = toDateKey(source.date || dateKey);
+  const checkInEvents = normalizeCheckInEvents(source.checkInEvents);
+  const latestCheckInEvent = checkInEvents.length > 0 ? checkInEvents[checkInEvents.length - 1] : null;
+  const hasLegacyCheckIn = source.checkIn && typeof source.checkIn === "object";
+  const latestCheckInSnapshot = toCheckInSnapshotFromEvent(latestCheckInEvent);
 
   return {
     date: normalizedDate,
     healthSnapshot: source.healthSnapshot && typeof source.healthSnapshot === "object"
       ? source.healthSnapshot
       : null,
-    checkIn: normalizeCheckIn(source.checkIn),
+    checkIn: hasLegacyCheckIn ? normalizeCheckIn(source.checkIn) : normalizeCheckIn(latestCheckInSnapshot),
+    checkInEvents,
     presentedMissions: normalizePresentedMissions(source.presentedMissions),
     selectedMissionIds: toStringArray(source.selectedMissionIds),
     missionCompletion: toBooleanMap(source.missionCompletion),

@@ -45,6 +45,7 @@ test("normalizeDailyRecord keeps backward compatibility for existing records", a
     sleep_before_2300: true,
     walk_15min: false,
   });
+  assert.deepEqual(record.checkInEvents, []);
 });
 
 test("normalizeDailyRecord keeps new presentedMissions and morningOutcome fields", async () => {
@@ -72,6 +73,24 @@ test("normalizeDailyRecord keeps new presentedMissions and morningOutcome fields
         delta: 4,
         targetDate: "2026-08-04",
       },
+      checkInEvents: [
+        {
+          timestamp: "2026-08-03T00:02:00.000Z",
+          condition: 3,
+          sleep: 3,
+          focus: 3,
+          mentalSpace: 3,
+          activity: 3,
+        },
+        {
+          timestamp: "2026-08-03T04:14:00.000Z",
+          condition: 4,
+          sleep: 4,
+          focus: 3,
+          mentalSpace: 2,
+          activity: 4,
+        },
+      ],
       checkInNote: {
         text: "午後に不安感が強い",
         createdAt: "2026-08-03T02:15:00.000Z",
@@ -114,6 +133,24 @@ test("normalizeDailyRecord keeps new presentedMissions and morningOutcome fields
     updatedAt: "2026-08-03T04:40:00.000Z",
   });
   assert.equal(record.tomorrowCapacityPrediction.targetDate, "2026-08-04");
+  assert.deepEqual(record.checkInEvents, [
+    {
+      timestamp: "2026-08-03T00:02:00.000Z",
+      condition: 3,
+      sleep: 3,
+      focus: 3,
+      mentalSpace: 3,
+      activity: 3,
+    },
+    {
+      timestamp: "2026-08-03T04:14:00.000Z",
+      condition: 4,
+      sleep: 4,
+      focus: 3,
+      mentalSpace: 2,
+      activity: 4,
+    },
+  ]);
   assert.deepEqual(record.morningOutcome, {
     sourceDate: "2026-08-04",
     checkIn: {
@@ -217,6 +254,166 @@ test("normalizeDailyRecord treats empty checkInNote text as null", async () => {
   );
 
   assert.equal(record.checkInNote, null);
+});
+
+test("normalizeDailyRecord restores latest checkIn from latest checkInEvent when legacy checkIn is missing", async () => {
+  const { normalizeDailyRecord } = await loadModel();
+
+  const record = normalizeDailyRecord(
+    {
+      date: "2026-08-03",
+      checkInEvents: [
+        {
+          timestamp: "2026-08-03T04:14:00.000Z",
+          condition: 4,
+          sleep: 4,
+          focus: 3,
+          mentalSpace: 2,
+          activity: 4,
+        },
+        {
+          timestamp: "2026-08-03T00:02:00.000Z",
+          condition: 3,
+          sleep: 3,
+          focus: 3,
+          mentalSpace: 3,
+          activity: 3,
+        },
+      ],
+    },
+    "2026-08-03",
+  );
+
+  assert.deepEqual(record.checkIn, {
+    condition: 4,
+    sleep: 4,
+    focus: 3,
+    mentalSpace: 2,
+    activity: 4,
+  });
+  assert.equal(record.checkInEvents.length, 2);
+  assert.equal(record.checkInEvents[0].timestamp, "2026-08-03T00:02:00.000Z");
+  assert.equal(record.checkInEvents[1].timestamp, "2026-08-03T04:14:00.000Z");
+});
+
+test("appendCheckInEvent appends new events and skips duplicate timestamp events", async () => {
+  const { appendCheckInEvent } = await loadModel();
+
+  const first = appendCheckInEvent([], {
+    timestamp: "2026-08-03T00:02:00.000Z",
+    condition: 3,
+    sleep: 3,
+    focus: 3,
+    mentalSpace: 3,
+    activity: 3,
+  });
+
+  const second = appendCheckInEvent(first, {
+    timestamp: "2026-08-03T04:14:00.000Z",
+    condition: 4,
+    sleep: 4,
+    focus: 3,
+    mentalSpace: 2,
+    activity: 4,
+  });
+
+  const duplicate = appendCheckInEvent(second, {
+    timestamp: "2026-08-03T04:14:00.000Z",
+    condition: 1,
+    sleep: 1,
+    focus: 1,
+    mentalSpace: 1,
+    activity: 1,
+  });
+
+  assert.equal(first.length, 1);
+  assert.equal(second.length, 2);
+  assert.equal(duplicate.length, 2);
+});
+
+test("normalizeDailyRecord keeps checkIn event history separated by dateKey", async () => {
+  const { normalizeDailyRecord } = await loadModel();
+
+  const dayOne = normalizeDailyRecord(
+    {
+      date: "2026-08-03",
+      checkInEvents: [
+        {
+          timestamp: "2026-08-03T00:02:00.000Z",
+          condition: 3,
+          sleep: 3,
+          focus: 3,
+          mentalSpace: 3,
+          activity: 3,
+        },
+      ],
+    },
+    "2026-08-03",
+  );
+
+  const dayTwo = normalizeDailyRecord(
+    {
+      date: "2026-08-04",
+      checkInEvents: [
+        {
+          timestamp: "2026-08-04T12:37:00.000Z",
+          condition: 4,
+          sleep: 4,
+          focus: 4,
+          mentalSpace: 4,
+          activity: 4,
+        },
+      ],
+    },
+    "2026-08-04",
+  );
+
+  assert.equal(dayOne.date, "2026-08-03");
+  assert.equal(dayTwo.date, "2026-08-04");
+  assert.equal(dayOne.checkInEvents[0].timestamp.startsWith("2026-08-03"), true);
+  assert.equal(dayTwo.checkInEvents[0].timestamp.startsWith("2026-08-04"), true);
+});
+
+test("normalizeDailyRecord preserves multiple checkIn events after serialize and reload", async () => {
+  const { normalizeDailyRecord } = await loadModel();
+
+  const firstPass = normalizeDailyRecord(
+    {
+      date: "2026-08-03",
+      checkInEvents: [
+        {
+          timestamp: "2026-08-03T00:02:00.000Z",
+          condition: 3,
+          sleep: 3,
+          focus: 3,
+          mentalSpace: 3,
+          activity: 3,
+        },
+        {
+          timestamp: "2026-08-03T04:14:00.000Z",
+          condition: 4,
+          sleep: 4,
+          focus: 3,
+          mentalSpace: 2,
+          activity: 4,
+        },
+      ],
+    },
+    "2026-08-03",
+  );
+
+  const serialized = JSON.stringify(firstPass);
+  const secondPass = normalizeDailyRecord(JSON.parse(serialized), "2026-08-03");
+
+  assert.equal(secondPass.checkInEvents.length, 2);
+  assert.deepEqual(secondPass.checkInEvents, firstPass.checkInEvents);
+  assert.deepEqual(secondPass.checkIn, {
+    condition: 4,
+    sleep: 4,
+    focus: 3,
+    mentalSpace: 2,
+    activity: 4,
+  });
 });
 
 test("resolveCheckInNoteForSave sets createdAt on first non-empty save", async () => {
