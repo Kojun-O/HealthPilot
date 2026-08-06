@@ -20,6 +20,7 @@ import {
   loadDailyRecord,
   saveDailyRecord,
 } from "../storage/dailyRecordStorage.js";
+import { calculateTodayCapacityFromSnapshot } from "../capacity/todayCapacityModelV1.js";
 
 const DEFAULT_CHECK_IN_RATINGS = Object.freeze({
   condition: 3,
@@ -93,7 +94,7 @@ function toPresentedMissions(missions) {
     .filter(Boolean);
 }
 
-export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
+export function useDailyRecord({ missions, baselineTomorrow }) {
   const [checkInRatings, setCheckInRatings] = useState(DEFAULT_CHECK_IN_RATINGS);
   const [checkInEvent, setCheckInEvent] = useState(null);
   const [pendingCheckInEventTimestamp, setPendingCheckInEventTimestamp] = useState(null);
@@ -103,6 +104,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   const [healthSnapshot, setHealthSnapshot] = useState(null);
   const [selectedMissionIds, setSelectedMissionIds] = useState([]);
   const [hasUserCheckInInput, setHasUserCheckInInput] = useState(false);
+  const [hasCheckInSnapshot, setHasCheckInSnapshot] = useState(false);
   const [currentDateKey, setCurrentDateKey] = useState(getTodayDateKey());
   const [isHydrated, setIsHydrated] = useState(false);
   const appStateRef = useRef(AppState.currentState);
@@ -161,6 +163,16 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       targetDate,
     };
   }, [baselineTomorrow, completedImpact, currentDateKey, projectedTomorrow]);
+  const todayCapacity = useMemo(() => {
+    if (!hasCheckInSnapshot) {
+      return null;
+    }
+
+    return calculateTodayCapacityFromSnapshot({
+      healthSnapshot,
+      checkIn: checkInRatings,
+    });
+  }, [hasCheckInSnapshot, healthSnapshot, checkInRatings]);
 
   const commitPendingCheckInEvent = useCallback(() => {
     const nextEvent = buildCommittedCheckInEvent({
@@ -228,6 +240,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     async function hydrateDailyRecord() {
       setIsHydrated(false);
       setHasUserCheckInInput(false);
+      setHasCheckInSnapshot(false);
       setCheckInEvent(null);
       setPendingCheckInEventTimestamp(null);
       lastCommittedCheckInEventTimestampRef.current = null;
@@ -243,6 +256,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       setPersistedPresentedMissions(Array.isArray(record?.presentedMissions) ? record.presentedMissions : []);
       setSelectedMissionIds(Array.isArray(record?.selectedMissionIds) ? record.selectedMissionIds : []);
       setHealthSnapshot(record?.healthSnapshot ?? null);
+      setHasCheckInSnapshot(Array.isArray(record?.checkInEvents) && record.checkInEvents.length > 0);
       setIsHydrated(true);
     }
 
@@ -311,7 +325,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
       const morningOutcome = buildMorningOutcome({
         currentDateKey,
         checkInRatings,
-        actualCapacity,
+        actualCapacity: todayCapacity,
         previousRecord,
       });
 
@@ -333,7 +347,6 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
   }, [
     checkInRatings,
     checkInNoteText,
-    actualCapacity,
     currentDateKey,
     healthSnapshot,
     isHydrated,
@@ -344,11 +357,13 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     presentedMissions,
     selectedMissionIds,
     hasUserCheckInInput,
+    todayCapacity,
     tomorrowCapacityPrediction,
   ]);
 
   const updateCheckInRating = useCallback((key, value) => {
     setHasUserCheckInInput(true);
+    setHasCheckInSnapshot(true);
     setPendingCheckInEventTimestamp(new Date().toISOString());
     setCheckInRatings((previous) => ({
       ...previous,
@@ -395,6 +410,7 @@ export function useDailyRecord({ missions, baselineTomorrow, actualCapacity }) {
     missions: displayedMissions,
     projectedTomorrow,
     setHealthSnapshot,
+    todayCapacity,
     toggleMissionCompletion,
     updateCheckInRating,
     updateCheckInNoteText,

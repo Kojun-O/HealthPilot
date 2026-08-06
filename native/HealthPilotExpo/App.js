@@ -52,8 +52,6 @@ export default function App() {
     && Number.isFinite(safeInsight.tomorrowCapacity.baseline)
       ? safeInsight.tomorrowCapacity.baseline
       : 0;
-  const actualCapacity = safeInsight?.todayCapacity;
-
   const {
     checkInRatings,
     checkInNoteText,
@@ -64,13 +62,13 @@ export default function App() {
     missions,
     projectedTomorrow,
     setHealthSnapshot,
+    todayCapacity,
     toggleMissionCompletion,
     updateCheckInRating,
     updateCheckInNoteText,
   } = useDailyRecord({
     missions: liveMissions,
     baselineTomorrow,
-    actualCapacity,
   });
 
   const formatDisplayDate = useCallback((dateKey) => {
@@ -270,7 +268,7 @@ export default function App() {
 
         <View style={styles.compactCard}>
           <Text style={styles.section}>Today's Capacity</Text>
-          <Text style={styles.capacity}>{safeInsight.todayCapacity}</Text>
+          <Text style={styles.capacity}>{todayCapacity === null ? "--" : todayCapacity}</Text>
         </View>
 
         <View style={styles.compactCard}>
